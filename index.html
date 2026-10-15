@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Navegação autônoma: do sensor à ação</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:#f7f7f5;color:#1d1d1f;padding:20px}
+h1{font-size:20px;margin:0 0 4px}
+h2{font-size:15px;margin:0 0 8px}
+.sub{color:#6b6b70;font-size:13px;margin-bottom:16px;line-height:1.5}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px}
+@media(max-width:980px){.grid{grid-template-columns:1fr}}
+.card{background:#fff;border:1px solid #dcdcd8;border-radius:10px;padding:14px}
+canvas{width:100%;height:auto;border:1px solid #dcdcd8;border-radius:6px;display:block;background:#fff}
+.pipe{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.stage{flex:1 1 130px;border:2px solid #dcdcd8;border-radius:8px;padding:8px;font-size:13px;text-align:center;cursor:pointer;background:#fafafa;transition:all .2s;font-weight:500}
+.stage.active{background:#fde68a;border-color:#f59e0b;font-weight:700}
+.stage small{display:block;color:#6b6b70;font-weight:400;font-size:11px;margin-top:2px}
+.arrow{color:#6b6b70;font-size:16px}
+.explain{margin-top:12px;font-size:14px;min-height:56px;line-height:1.5;background:#f3f4f6;border-radius:6px;padding:10px}
+.controls{display:flex;flex-wrap:wrap;gap:10px;margin:6px 0;align-items:flex-end}
+button{border:1px solid #bbb;background:#fff;border-radius:6px;padding:6px 10px;cursor:pointer;font-size:13px}
+button:hover{background:#f0f0f0}
+button.primary{background:#2563eb;color:#fff;border-color:#2563eb}
+label{font-size:13px;display:flex;flex-direction:column;gap:2px;min-width:200px}
+label.inline{flex-direction:row;align-items:center;gap:6px;min-width:auto}
+label span{color:#6b6b70}
+.log{font-family:ui-monospace,Menlo,monospace;font-size:12px;background:#111827;color:#e5e7eb;border-radius:6px;padding:10px;height:170px;overflow:auto;white-space:pre-wrap}
+.metrics{font-size:13px;margin-top:8px;color:#6b6b70}
+.metrics b{color:#1d1d1f;font-size:15px}
+.legend{font-size:12px;color:#6b6b70;margin-top:6px;line-height:1.5}
+</style>
+</head>
+<body>
+
+<h1>Navegação autônoma: do sensor à ação</h1>
+<div class="sub">
+Robô azul com um sensor ultrassônico simplificado (4 direções). Escala: 1 célula = 0.5 m; alcance do sensor = 3 m.
+Os cinco blocos são as tarefas do sistema de navegação. Clique em um bloco para ver o que ele faz. Use os botões abaixo para ver como elas se alimentam.
+</div>
+
+<div class="card">
+  <div class="pipe">
+    <div class="stage" data-s="sensor">1. Sensores<small>ultrassom mede distância</small></div><span class="arrow">→</span>
+    <div class="stage" data-s="loc">2. Localização<small>onde estou?</small></div><span class="arrow">→</span>
+    <div class="stage" data-s="map">3. Mapeamento<small>o que há ao redor?</small></div><span class="arrow">→</span>
+    <div class="stage" data-s="plan">4. Planejamento<small>por onde ir?</small></div><span class="arrow">→</span>
+    <div class="stage" data-s="ctrl">5. Controle<small>girar / andar</small></div>
+  </div>
+  <div id="expl" class="explain"></div>
+</div>
+
+<div class="grid">
+  <div class="card">
+    <h2>Mundo real (o que existe de fato)</h2>
+    <canvas id="world"></canvas>
+    <div class="legend">Modo "Definir objetivo": clique para escolher o destino (amarelo). Modo "Adicionar obstáculo": clique para criar ou remover parede. O robô não conhece obstáculos novos até o sensor detectá-los.</div>
+  </div>
+  <div class="card">
+    <h2>O que o robô sabe</h2>
+    <canvas id="map"></canvas>
+    <div class="legend">Cinza = desconhecido · branco = livre · preto = ocupado · verde tracejado = caminho planejado · vermelho = pose estimada · azul tracejado = pose real (só para comparação).</div>
+  </div>
+</div>
+
+<div class="card" style="margin-top:16px">
+  <div class="controls">
+    <label><span>Cenário (nível de complexidade)</span>
+      <select id="scen" style="font-size:13px;padding:5px;border-radius:6px;border:1px solid #bbb">
+        <option value="sala">Nível 1: Robô de sala (ambiente estático)</option>
+        <option value="dinamico">Nível 2: Ambiente dinâmico (pessoa andando no corredor)</option>
+        <option value="carro">Nível 3: Carro (dinâmico + GNSS ruidoso a cada 4 ciclos)</option>
+      </select></label>
+  </div>
+  <div class="controls">
+    <label><span>Ruído da odometria: <b id="odomV"></b></span>
+      <input type="range" id="odom" min="0" max="0.5" step="0.01" value="0.15" ></label>
+    <label><span>Ruído do ultrassom: <b id="sensV"></b></span>
+      <input type="range" id="sens" min="0" max="0.5" step="0.01" value="0.1" ></label>
+    <label><span>Peso da correção pelo sensor: <b id="corrV"></b></span>
+      <input type="range" id="corr" min="0" max="1" step="0.05" value="1" ></label>
+  </div>
+  <div class="controls">
+    <label class="inline"><input type="radio" name="mode" value="goal" checked> Definir objetivo</label>
+    <label class="inline"><input type="radio" name="mode" value="obst"> Adicionar obstáculo</label>
+  </div>
+  <div class="controls">
+    <button id="bf">Andar 1 célula</button>
+    <button id="bl">Girar ↺</button>
+    <button id="br">Girar ↻</button>
+    <button id="bs">Só ler sensores</button>
+    <button class="primary" id="go">Ir ao objetivo</button>
+    <button id="stop">Parar</button>
+    <button id="reset">Reiniciar</button>
+  </div>
+  <div class="metrics">
+    Erro de localização: <b id="m_err">-</b> &nbsp;·&nbsp;
+    Mapa conhecido: <b id="m_cov">-</b> &nbsp;·&nbsp;
+    Ciclos: <b id="m_steps">0</b>
+  </div>
+</div>
+
+<div class="card" style="margin-top:16px">
+  <h2>Registro: o que cada etapa fez</h2>
+  <div id="log" class="log"></div>
+</div>
+
+<script>
+const W=16,H=10,CS=28,MAXR=6,TAU=Math.PI/2,M_PER_CELL=0.5,DELAY=220;
+const RECTS=[[3,0,1,4],[7,4,2,1],[10,1,1,4],[12,6,3,1],[5,7,1,3],[1,6,1,2]];
+const DIRS={front:0,left:-TAU,right:TAU,back:Math.PI};
+const START={x:1.5,y:2.5,th:0};
+const EXPL={
+  sensor:"<b>Sensor:</b> o ultrassom emite um pulso sonoro e mede o tempo do eco; isso vira uma distância. A leitura é sempre ruidosa. Sozinho, o sensor só diz o que está a X metros, não onde o robô está.",
+  loc:"<b>Localização:</b> compara o que o sensor mediu com o que deveria medir se o robô estivesse na pose estimada, usando o mapa prévio. A diferença corrige a estimativa. Sem isso, só a odometria vale, e o erro cresce a cada passo.",
+  map:"<b>Mapeamento:</b> com a pose estimada, cada leitura diz que as células no caminho do feixe estão livres e a célula do eco está ocupada. Se a pose estiver errada, o mapa também fica errado.",
+  plan:"<b>Planejamento:</b> com o mapa atual, busca um caminho até o objetivo (busca em largura). Células desconhecidas são tratadas como passáveis, por isso o robô às vezes bate numa parede nova e precisa replanejar.",
+  ctrl:"<b>Controle:</b> transforma o próximo passo do caminho em comandos de motor (girar 90° ou andar 1 célula). A odometria estima o movimento executado, e essa estimativa tem erro.",
+  default:"Clique em uma etapa para ver o que ela faz. Use <b>Ir ao objetivo</b> para ver o ciclo completo: sensor → localização → mapeamento → planejamento → controle."
+};
+
+const $=id=>document.getElementById(id);
+const worldC=$('world'), mapC=$('map');
+const wctx=worldC.getContext('2d'), mctx=mapC.getContext('2d');
+worldC.width=mapC.width=W*CS; worldC.height=mapC.height=H*CS;
+
+function makeWalls(){
+  const w=new Array(W*H).fill(0);
+  for(let x=0;x<W;x++){w[x]=1; w[(H-1)*W+x]=1;}
+  for(let y=0;y<H;y++){w[y*W]=1; w[y*W+W-1]=1;}
+  for(const [x,y,ww,hh] of RECTS) for(let j=y;j<y+hh;j++) for(let i=x;i<x+ww;i++) w[j*W+i]=1;
+  return w;
+}
+const priorWalls=makeWalls();
+let walls=makeWalls();
+let truth,est,occ,goal,path,running=false,busy=false,lastR=null,stepN=0;
+let scen='sala', dynX=2, dynDir=1;
+const DY=5, DX0=2, DX1=9;   // pessoa andando na linha 5, entre x=2 e x=9
+function moveDyn(){
+  let nx=dynX+dynDir;
+  if(nx>DX1||nx<DX0){ dynDir=-dynDir; nx=dynX+dynDir; }
+  if(Math.floor(truth.y)===DY && Math.floor(truth.x)===nx) return; // espera se o robô estiver no caminho
+  walls[DY*W+dynX]=0; walls[DY*W+nx]=1; dynX=nx;
+}
+function applyScen(){
+  scen=$('scen').value;
+  const p={sala:[0.15,0.10,1],dinamico:[0.15,0.10,1],carro:[0.30,0.20,1]}[scen];
+  $('odom').value=p[0]; $('sens').value=p[1]; $('corr').value=p[2];
+  upd(); reset();
+}
+
+function upd(){
+  $('odomV').textContent=(+$('odom').value).toFixed(2);
+  $('sensV').textContent=(+$('sens').value*M_PER_CELL*100).toFixed(0)+' cm';
+  $('corrV').textContent=(+$('corr').value).toFixed(2);
+}
+upd();
+
+const fm=d=>(d*M_PER_CELL).toFixed(2)+' m';
+function gauss(){let u=0,v=0;while(!u)u=Math.random();while(!v)v=Math.random();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);}
+const pause=()=>new Promise(r=>setTimeout(r,DELAY));
+const cellIdx=(x,y)=>Math.floor(y)*W+Math.floor(x);
+
+function isWallIn(g,x,y){
+  const i=Math.floor(y), j=Math.floor(x);
+  if(i<0||j<0||i>=H||j>=W) return true;
+  return g[i*W+j]===1;
+}
+function cast(g,px,py,ang){
+  const dx=Math.cos(ang), dy=Math.sin(ang);
+  for(let d=0.02; d<MAXR; d+=0.02){ if(isWallIn(g,px+dx*d,py+dy*d)) return d; }
+  return MAXR;
+}
+
+function readSensors(){
+  const n=+$('sens').value, out={};
+  for(const k in DIRS){
+    const d=cast(walls,truth.x,truth.y,truth.th+DIRS[k]);
+    out[k]=Math.min(MAXR,Math.max(0.1,d+gauss()*n));
+  }
+  return out;
+}
+
+function localize(r){
+  const w=+$('corr').value, notes=[];
+  for(const k in DIRS){
+    const ang=est.th+DIRS[k];
+    const pred=cast(priorWalls,est.x,est.y,ang), m=r[k];
+    if(m>=MAXR-0.1 && pred>=MAXR-0.1) continue;
+    const e=m-pred;
+    if(Math.abs(e)>1.2){
+      notes.push(`${k}: leitura ${fm(m)}, esperado ${fm(pred)} → descartada (provável obstáculo não mapeado)`);
+      continue;
+    }
+    const corr=w*0.5*e;
+    est.x-=corr*Math.cos(ang); est.y-=corr*Math.sin(ang);
+    notes.push(`${k}: medido ${fm(m)}, esperado ${fm(pred)} → corrige ${(corr*M_PER_CELL).toFixed(2)} m`);
+  }
+  return notes;
+}
+
+function mark(x,y,p){
+  const i=Math.floor(y), j=Math.floor(x);
+  if(i<0||j<0||i>=H||j>=W) return;
+  const idx=i*W+j;
+  occ[idx]=occ[idx]*0.5+p*0.5;
+}
+function mapUpdate(r){
+  for(const k in DIRS){
+    const ang=est.th+DIRS[k], m=r[k], dx=Math.cos(ang), dy=Math.sin(ang);
+    for(let d=0.5; d<m-0.3 && d<MAXR; d+=0.25) mark(est.x+dx*d, est.y+dy*d, 0.2);
+    if(m<MAXR-0.1) mark(est.x+dx*m, est.y+dy*m, 0.85);
+  }
+}
+
+function plan(){
+  const sx=Math.min(W-1,Math.max(0,Math.floor(est.x)));
+  const sy=Math.min(H-1,Math.max(0,Math.floor(est.y)));
+  const start=sy*W+sx, gIdx=goal.y*W+goal.x;
+  const prev=new Array(W*H).fill(-1), seen=new Array(W*H).fill(false);
+  const q=[start]; seen[start]=true; let found=false;
+  while(q.length){
+    const c=q.shift();
+    if(c===gIdx){found=true;break;}
+    const cx=c%W, cy=Math.floor(c/W);
+    for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){
+      const nx=cx+dx, ny=cy+dy;
+      if(nx<0||ny<0||nx>=W||ny>=H) continue;
+      const n=ny*W+nx;
+      if(seen[n]||occ[n]>=0.6) continue;
+      seen[n]=true; prev[n]=c; q.push(n);
+    }
+  }
+  if(!found) return [];
+  const out=[];
+  let c=gIdx;
+  while(c!==-1){ out.unshift({x:c%W+0.5, y:Math.floor(c/W)+0.5}); c=prev[c]; }
+  return out;
+}
+function needReplan(){
+  if(path.length<2) return true;
+  return path.slice(1).some(p=>occ[cellIdx(p.x,p.y)]>=0.6);
+}
+function arrived(){ return goal && Math.floor(est.x)===goal.x && Math.floor(est.y)===goal.y; }
+
+function actForward(){
+  const odom=+$('odom').value;
+  const tx=truth.x+Math.cos(truth.th), ty=truth.y+Math.sin(truth.th);
+  if(isWallIn(walls,tx,ty)){ log('Controle: andar bloqueado por obstáculo. O robô não se move.'); return false; }
+  truth.x=tx; truth.y=ty;
+  est.x+=Math.cos(est.th)*(1+gauss()*odom*0.3);
+  est.y+=Math.sin(est.th)*(1+gauss()*odom*0.3);
+  log('Controle: andou 1 célula. Odometria estima o movimento com erro.');
+  return true;
+}
+function actTurn(s){
+  const odom=+$('odom').value;
+  truth.th+=s*TAU;
+  est.th+=s*TAU+gauss()*odom*0.15;
+  log(`Controle: girou ${s>0?'à direita':'à esquerda'} 90°. Odometria estima o giro com erro.`);
+}
+
+function log(msg){
+  const el=$('log');
+  el.textContent+=`[${String(stepN).padStart(3,'0')}] ${msg}\n`;
+  el.scrollTop=el.scrollHeight;
+}
+function setStage(name){
+  document.querySelectorAll('.stage').forEach(el=>el.classList.toggle('active',el.dataset.s===name));
+  $('expl').innerHTML=EXPL[name]||EXPL.default;
+}
+
+async function senseAndMap(){
+  stepN++;
+  if(scen!=='sala') moveDyn();
+  setStage('sensor');
+  const r=readSensors(); lastR=r;
+  log(`Sensor ultrassônico: frente ${fm(r.front)}, esquerda ${fm(r.left)}, direita ${fm(r.right)}, trás ${fm(r.back)}`);
+  await pause();
+  setStage('loc');
+  const notes=localize(r);
+  if(scen==='carro' && stepN%4===0){
+    const w=+$('corr').value;
+    const fx=truth.x+gauss()*0.4, fy=truth.y+gauss()*0.4;
+    est.x+=0.5*w*(fx-est.x); est.y+=0.5*w*(fy-est.y);
+    notes.push(`GNSS: fix ruidoso (${fx.toFixed(1)}, ${fy.toFixed(1)}) células → puxa a estimativa`);
+  }
+  if(!notes.length) log('Localização: nenhuma leitura útil nesta direção.');
+  notes.forEach(n=>log('Localização: '+n));
+  await pause();
+  setStage('map');
+  if(scen!=='sala') for(let i=0;i<occ.length;i++) occ[i]=0.5+(occ[i]-0.5)*0.85; // esquecimento: mapa "esquece" o que mudou
+  mapUpdate(r);
+  log('Mapeamento: grade atualizada com a pose estimada.');
+  await pause();
+  render();
+}
+
+async function manual(k){
+  if(running||busy) return;
+  busy=true;
+  setStage('ctrl');
+  if(k==='f') actForward(); else actTurn(k==='l'?-1:1);
+  path=[];
+  await pause();
+  await senseAndMap();
+  busy=false; render();
+}
+async function senseOnly(){
+  if(running||busy) return;
+  busy=true; await senseAndMap(); busy=false; render();
+}
+
+async function autoStep(){
+  await senseAndMap();
+  if(!goal) return false;
+  if(arrived()){ log('Objetivo alcançado.'); return false; }
+  if(needReplan()){
+    setStage('plan');
+    path=plan();
+    log(path.length? `Planejamento: caminho com ${path.length-1} passos.` : 'Planejamento: nenhum caminho conhecido até o objetivo.');
+    await pause();
+    if(path.length<2) return false;
+  }
+  setStage('ctrl');
+  const a=path[0], b=path[1];
+  const desired=Math.atan2(b.y-a.y,b.x-a.x);
+  let d=desired-est.th; d=Math.atan2(Math.sin(d),Math.cos(d));
+  if(Math.abs(d)>0.4){ actTurn(d>0?1:-1); }
+  else { if(actForward()) path.shift(); else path=[]; }
+  await pause();
+  return true;
+}
+
+async function runLoop(){
+  busy=true;
+  while(running){
+    const ok=await autoStep();
+    render();
+    if(!ok) break;
+  }
+  running=false; busy=false; render();
+}
+
+function drawRobot(c,p,color,rad){
+  c.fillStyle=color;
+  c.beginPath(); c.arc(p.x*CS,p.y*CS,rad,0,2*Math.PI); c.fill();
+  c.strokeStyle=color; c.lineWidth=2;
+  c.beginPath(); c.moveTo(p.x*CS,p.y*CS);
+  c.lineTo((p.x+Math.cos(p.th)*0.5)*CS,(p.y+Math.sin(p.th)*0.5)*CS); c.stroke();
+}
+function gridLines(c){
+  c.strokeStyle='#eeeeea'; c.lineWidth=1;
+  for(let i=0;i<=W;i++){c.beginPath();c.moveTo(i*CS,0);c.lineTo(i*CS,H*CS);c.stroke();}
+  for(let j=0;j<=H;j++){c.beginPath();c.moveTo(0,j*CS);c.lineTo(W*CS,j*CS);c.stroke();}
+}
+function drawGoal(c){
+  if(!goal) return;
+  c.fillStyle='#eab308';
+  c.beginPath(); c.arc(goal.x*CS+CS/2,goal.y*CS+CS/2,CS*0.35,0,2*Math.PI); c.fill();
+  c.fillStyle='#111'; c.font='bold 12px system-ui'; c.textAlign='center'; c.textBaseline='middle';
+  c.fillText('G',goal.x*CS+CS/2,goal.y*CS+CS/2);
+}
+
+function drawWorld(){
+  const c=wctx;
+  c.clearRect(0,0,worldC.width,worldC.height);
+  c.fillStyle='#ffffff'; c.fillRect(0,0,worldC.width,worldC.height);
+  for(let j=0;j<H;j++) for(let i=0;i<W;i++){
+    if(walls[j*W+i]){ c.fillStyle='#374151'; c.fillRect(i*CS,j*CS,CS,CS); }
+  }
+  gridLines(c);
+  drawGoal(c);
+  if(lastR){
+    c.strokeStyle='rgba(37,99,235,0.45)'; c.lineWidth=1.5;
+    for(const k in DIRS){
+      const ang=truth.th+DIRS[k], d=Math.min(lastR[k],MAXR);
+      c.beginPath(); c.moveTo(truth.x*CS,truth.y*CS);
+      c.lineTo((truth.x+Math.cos(ang)*d)*CS,(truth.y+Math.sin(ang)*d)*CS); c.stroke();
+    }
+  }
+  drawRobot(c,truth,'#2563eb',CS*0.32);
+}
+
+function drawMap(){
+  const c=mctx;
+  c.clearRect(0,0,mapC.width,mapC.height);
+  for(let j=0;j<H;j++) for(let i=0;i<W;i++){
+    const p=occ[j*W+i];
+    c.fillStyle = p>=0.6 ? '#111827' : (p<=0.4 ? '#f9fafb' : '#d1d5db');
+    c.fillRect(i*CS,j*CS,CS,CS);
+  }
+  gridLines(c);
+  if(path.length){
+    c.strokeStyle='#16a34a'; c.lineWidth=2; c.setLineDash([5,4]);
+    c.beginPath();
+    path.forEach((p,k)=>{ const X=p.x*CS, Y=p.y*CS; if(k) c.lineTo(X,Y); else c.moveTo(X,Y); });
+    c.stroke(); c.setLineDash([]);
+  }
+  drawGoal(mctx);
+  c.strokeStyle='rgba(37,99,235,0.7)'; c.lineWidth=1.5; c.setLineDash([3,3]);
+  c.beginPath(); c.arc(truth.x*CS,truth.y*CS,CS*0.32,0,2*Math.PI); c.stroke(); c.setLineDash([]);
+  drawRobot(c,est,'#dc2626',CS*0.22);
+}
+
+function updateMetrics(){
+  const err=Math.hypot(est.x-truth.x,est.y-truth.y)*M_PER_CELL;
+  let known=0; for(const p of occ) if(p<=0.4||p>=0.6) known++;
+  $('m_err').textContent=err.toFixed(2)+' m';
+  $('m_cov').textContent=Math.round(known/(W*H)*100)+'%';
+  $('m_steps').textContent=stepN;
+}
+function render(){ drawWorld(); drawMap(); updateMetrics(); }
+
+worldC.addEventListener('click',e=>{
+  if(running||busy) return;
+  const rect=worldC.getBoundingClientRect();
+  const cx=Math.floor((e.clientX-rect.left)/rect.width*W);
+  const cy=Math.floor((e.clientY-rect.top)/rect.height*H);
+  if(cx<=0||cy<=0||cx>=W-1||cy>=H-1) return;
+  const idx=cy*W+cx;
+  const mode=document.querySelector('input[name=mode]:checked').value;
+  if(mode==='goal'){
+    if(walls[idx]){ log('Objetivo não pode estar dentro de um obstáculo.'); return; }
+    goal={x:cx,y:cy}; path=[];
+    log(`Objetivo definido na célula (${cx},${cy}).`);
+  } else {
+    if(Math.floor(truth.x)===cx && Math.floor(truth.y)===cy) return;
+    walls[idx]=walls[idx]?0:1;
+    log(walls[idx]?'Obstáculo adicionado no mundo real. O robô ainda não sabe dele.':'Obstáculo removido do mundo real.');
+  }
+  render();
+});
+
+$('go').onclick=()=>{
+  if(!goal){ log('Defina um objetivo primeiro (modo "Definir objetivo").'); return; }
+  if(running||busy) return;
+  running=true; runLoop();
+};
+$('stop').onclick=()=>{ running=false; };
+$('reset').onclick=()=>reset();
+
+// ligação de eventos (sem handlers inline)
+['odom','sens','corr'].forEach(id=>$(id).addEventListener('input',upd));
+$('scen').addEventListener('change',applyScen);
+$('bf').addEventListener('click',()=>manual('f'));
+$('bl').addEventListener('click',()=>manual('l'));
+$('br').addEventListener('click',()=>manual('r'));
+$('bs').addEventListener('click',()=>senseOnly());
+document.querySelectorAll('.stage').forEach(el=>el.addEventListener('click',()=>setStage(el.dataset.s)));
+
+function reset(){
+  running=false; busy=false;
+  truth={...START}; est={...START};
+  occ=new Array(W*H).fill(0.5);
+  walls=makeWalls();
+  dynX=DX0; dynDir=1;
+  if(scen!=='sala') walls[DY*W+dynX]=1;
+  goal=null; path=[]; lastR=null; stepN=0;
+  $('log').textContent='';
+  setStage(null);
+  log('Robô reiniciado no ponto inicial. Mapa vazio.');
+  render();
+}
+reset();
+</script>
+</body>
+</html>
