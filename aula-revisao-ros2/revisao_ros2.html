@@ -149,11 +149,10 @@ input[type=number]{font:inherit;padding:8px 10px;border:1px solid var(--linha);b
         <button class="bot" data-go="4"><h3>2. Simulação no Gazebo</h3><p>Arquitetura, SDF, plugins e ponte</p></button>
         <button class="bot" data-go="6"><h3>3. Modelos no Gazebo</h3><p>Mesh, SDF e colisão</p></button>
         <button class="bot" data-go="8"><h3>4. Raciocínio espacial</h3><p>Frames, TF2 e quaternions</p></button>
-        <button class="bot" data-go="10"><h3>5. Nav2 e lifecycle</h3><p>Estados e launch único</p></button>
-        <button class="bot" data-go="12"><h3>6. Action NavigateToPose</h3><p>Goal, feedback e result</p></button>
-        <button class="bot" data-go="13"><h3>7. Conectar no TurtleBot</h3><p>Variáveis, tópicos e teleoperação</p></button>
-        <button class="bot" data-go="14"><h3>8. Conectar no Dobot Magician</h3><p>Terminais, driver e comandos</p></button>
-        <button class="bot" data-go="15"><h3>9. Atividades práticas</h3><p>Três atividades com cronômetro</p></button>
+        <button class="bot" data-go="10"><h3>5. Nav2</h3><p>Arquitetura e servidores</p></button>
+        <button class="bot" data-go="12"><h3>6. Conectar no TurtleBot</h3><p>Variáveis, tópicos e teleoperação</p></button>
+        <button class="bot" data-go="13"><h3>7. Conectar no Dobot Magician</h3><p>Terminais, driver e comandos</p></button>
+        <button class="bot" data-go="14"><h3>8. Atividades práticas</h3><p>Três atividades com cronômetro</p></button>
       </div>
       <p class="nota">Clique em um tema para ir direto a ele. Use as setas do teclado para avançar.</p>
     </div>
@@ -425,117 +424,48 @@ input[type=number]{font:inherit;padding:8px 10px;border:1px solid var(--linha);b
     </div>
   </section>
 
-  <!-- 11. NAV2 LIFECYCLE -->
-  <section class="slide">
-    <div class="wrap">
-      <div class="topo"><span>Nav2</span><span>Lifecycle</span></div>
-      <h2>Estados dos servidores do Nav2</h2>
-      <div class="faixa"></div>
-      <div class="instr">Clique nos botões de cada servidor para mudar o estado dele. Cada estado só aceita algumas transições. Tente, por exemplo, ativar um servidor que ainda não foi configurado.</div>
-      <div class="linha" style="margin-bottom:16px">
-        <span class="pill unc">Unconfigured</span><span class="seta">— configure →</span>
-        <span class="pill ina">Inactive</span><span class="seta">— activate →</span>
-        <span class="pill act">Active</span>
-      </div>
-      <div class="grid" id="lc-cards"></div>
-      <div class="linha" style="margin-top:16px">
-        <button class="btn" id="lc-config">Configurar todos</button>
-        <button class="btn" id="lc-ativar">Ativar todos</button>
-        <button class="btn sec" id="lc-reset">Reiniciar</button>
-      </div>
-      <div class="log" id="lc-log" style="margin-top:14px">Registro de transições aparece aqui.</div>
-    </div>
-  </section>
-
-  <!-- 12. LAUNCH ÚNICO -->
-  <section class="slide">
-    <div class="wrap">
-      <div class="topo"><span>Nav2</span><span>Launch único</span></div>
-      <h2>Subir o stack com um arquivo de launch</h2>
-      <div class="faixa"></div>
-      <div class="flex2" style="margin-top:14px">
-        <pre style="font-size:12.5px"><span class="cm"># nav_stack.launch.py (simplificado)</span>
-from launch import LaunchDescription
-from launch_ros.actions import LifecycleNode, Node
-
-def generate_launch_description():
-    amcl = LifecycleNode(package='nav2_amcl', executable='amcl',
-                         name='amcl', namespace='')
-    planner = LifecycleNode(package='nav2_planner', executable='planner_server',
-                            name='planner_server', namespace='')
-    controller = LifecycleNode(package='nav2_controller', executable='controller_server',
-                               name='controller_server', namespace='')
-    manager = Node(package='nav2_lifecycle_manager',
-                   executable='lifecycle_manager',
-                   name='lifecycle_manager_navigation',
-                   parameters=[{'autostart': True,
-                                'node_names': ['amcl', 'planner_server',
-                                               'controller_server']}])
-    return LaunchDescription([amcl, planner, controller, manager])</pre>
-        <div class="painel" style="min-width:0">
-          <h3>Simular o lifecycle manager</h3>
-          <div class="instr" style="margin:10px 0 14px">Clique em <b>Executar launch</b>. Com <span class="mono">autostart: True</span>, o manager leva cada servidor da lista até Active.</div>
-          <div class="linha" style="margin-bottom:12px">
-            <span class="pill unc" id="ln-amcl">amcl: Unconfigured</span>
-            <span class="pill unc" id="ln-planner">planner: Unconfigured</span>
-            <span class="pill unc" id="ln-controller">controller: Unconfigured</span>
-          </div>
-          <div class="linha">
-            <button class="btn" id="ln-run">Executar launch</button>
-            <button class="btn sec" id="ln-reset">Reiniciar</button>
-          </div>
-          <div class="log" id="ln-log" style="margin-top:12px;min-height:170px">Saída do launch aparece aqui.</div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- 13. ACTION NAVIGATETOPOSE -->
-  <section class="slide">
-    <div class="wrap">
-      <div class="topo"><span>Action</span><span>NavigateToPose</span></div>
-      <h2>Enviar um goal e acompanhar a execução</h2>
-      <div class="faixa"></div>
-      <div class="grid" style="margin-top:4px">
-        <div class="card"><h3>Goal</h3><p><span class="mono">PoseStamped</span>: posição e orientação do destino, no frame <span class="mono">map</span>.</p></div>
-        <div class="card lar"><h3>Feedback</h3><p>Chega durante a execução: <span class="mono">distance_remaining</span>, <span class="mono">number_of_recoveries</span>.</p></div>
-        <div class="card"><h3>Result</h3><p>Chega no fim: <span class="mono">error_code</span> (sucesso, falha ou cancelado).</p></div>
-      </div>
-      <div class="flex2" style="margin-top:22px">
-        <div class="painel" style="min-width:0">
-          <div class="instr" style="margin-bottom:14px">Preencha o destino e clique em <b>Enviar goal</b>. A barra mostra o progresso. <b>Cancelar</b> interrompe a ação. O robô parte de (0, 0).</div>
-          <div class="grid" style="grid-template-columns:1fr 1fr 1fr">
-            <label>x (m)<input type="number" id="gx" value="3" step="0.5"></label>
-            <label>y (m)<input type="number" id="gy" value="2" step="0.5"></label>
-            <label>yaw (°)<input type="number" id="gyaw" value="90" step="15"></label>
-          </div>
-          <p class="nota" id="act-quat"></p>
-          <div class="linha" style="margin-top:12px">
-            <button class="btn" id="act-send">Enviar goal</button>
-            <button class="btn sec" id="act-cancel">Cancelar</button>
-          </div>
-          <div style="margin-top:14px;background:var(--cinzacl);border-radius:6px;height:18px;overflow:hidden"><div id="act-bar" style="height:100%;width:0;background:var(--laranja);transition:width .2s"></div></div>
-          <div class="caixa" id="act-status">Status: aguardando goal.</div>
-        </div>
-        <pre style="font-size:12.5px"><span class="cm"># cliente em rclpy (simplificado)</span>
-from nav2_msgs.action import NavigateToPose
-from rclpy.action import ActionClient
-
-client = ActionClient(node, NavigateToPose, 'navigate_to_pose')
-goal = NavigateToPose.Goal()
-goal.pose.header.frame_id = 'map'
-goal.pose.pose.position.x = 3.0
-goal.pose.pose.position.y = 2.0
-goal.pose.pose.orientation.z = 0.707  <span class="cm"># yaw de 90°</span>
-goal.pose.pose.orientation.w = 0.707
-
-future = client.send_goal_async(goal, feedback_callback=on_feedback)
-<span class="cm"># depois: future.result().get_result_async() → error_code</span></pre>
-      </div>
-    </div>
-  </section>
-
   <!-- 14. TURTLEBOT -->
+  <!-- NAV2: VISÃO GERAL -->
+  <section class="slide">
+    <div class="wrap">
+      <div class="topo"><span>Nav2</span><span>Visão geral</span></div>
+      <h2>O que é o Nav2</h2>
+      <div class="faixa"></div>
+      <div class="flex2" style="margin-top:6px">
+        <div style="min-width:0">
+          <p class="lead" style="margin-top:0;color:var(--texto)">O Nav2 (Navigation2) é o framework de navegação autônoma do ROS 2. Ele planeja e guia robôs móveis de uma posição inicial até uma meta, desviando de obstáculos estáticos e dinâmicos em tempo real.</p>
+          <ul class="passos" style="display:block;list-style:disc;padding-left:20px;margin-top:16px">
+            <li>Planeja a rota até a meta com base no mapa.</li>
+            <li>Guia o robô com comandos de velocidade.</li>
+            <li>Desvia de obstáculos estáticos e dinâmicos em tempo real.</li>
+            <li>Usa servidores independentes, coordenados por <b>árvores de comportamento</b> e gerenciados por <b>lifecycle nodes</b>.</li>
+          </ul>
+        </div>
+        <figure class="figura" style="margin-top:0;max-width:100%">
+          <img src="img/nav2_arquitetura.png" alt="Arquitetura do Nav2: BT Navigator, Controller, Planner, Behavior e Smoother Servers, com costmaps, lifecycle manager e interfaces com sensores, TF, mapa e base do robô">
+          <figcaption>Arquitetura do Nav2: servidores, BT Navigator e as interfaces com sensores, TF, mapa e base do robô.</figcaption>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <!-- NAV2: COMPONENTES -->
+  <section class="slide">
+    <div class="wrap">
+      <div class="topo"><span>Nav2</span><span>Componentes</span></div>
+      <h2>Os servidores principais</h2>
+      <div class="faixa"></div>
+      <div class="grid" style="margin-top:6px">
+        <div class="card"><h3>BT Navigator</h3><p><b>Orquestrador.</b> Usa árvores de comportamento (BehaviorTree.CPP) para decidir quando planejar, quando seguir o caminho e quando tentar uma recuperação.</p></div>
+        <div class="card"><h3>Planner Server</h3><p><b>Planejador global.</b> Calcula o caminho de A até B no mapa estático. Ex.: NavFn (A*/Dijkstra) e Smac Planner (A* híbrido, para robôs com restrição de esterçamento).</p></div>
+        <div class="card lar"><h3>Controller Server</h3><p><b>Seguidor de trajetória.</b> Transforma o caminho em comandos <span class="mono">cmd_vel</span> e desvia de obstáculos atuais. Ex.: DWB, TEB ou MPPI.</p></div>
+        <div class="card"><h3>Costmap 2D</h3><p><b>Mapas de custo.</b> Células com custo de colisão (livre, obstáculo, zona de inflação). <b>Global</b>: mapa inteiro. <b>Local</b>: janela ao redor do robô, atualizada por LiDAR e câmeras.</p></div>
+        <div class="card"><h3>Behavior Server</h3><p><b>Recuperações.</b> Spin (girar), Back Up (ré), Wait (aguardar) e Clear Costmaps (limpar os mapas de custo).</p></div>
+        <div class="card"><h3>Smoother Server</h3><p><b>Suavização.</b> Suaviza o caminho global antes de enviá-lo ao controlador, reduzindo curvas bruscas.</p></div>
+      </div>
+    </div>
+  </section>
+
   <section class="slide">
     <div class="wrap">
       <div class="topo"><span>Conexão</span><span>TurtleBot3</span></div>
@@ -713,7 +643,7 @@ ros2 service call /dobot/clear_alarms std_srvs/srv/Trigger "{}"</pre>
         <div class="card cardescuro"><h3>Comunicação</h3><p>Nós trocam tópicos, serviços e ações pelo DDS, no mesmo ROS_DOMAIN_ID.</p></div>
         <div class="card cardescuro"><h3>Simulação</h3><p>SDF descreve o mundo e o modelo; plugins dão comportamento; o bridge conecta ao ROS 2.</p></div>
         <div class="card cardescuro"><h3>Espaço</h3><p>map → odom → base_link → laser_link. Quaternions guardam a orientação.</p></div>
-        <div class="card cardescuro"><h3>Nav2</h3><p>Servidores em lifecycle, um launch para subir tudo, e a action NavigateToPose.</p></div>
+        <div class="card cardescuro"><h3>Nav2</h3><p>Servidores independentes, coordenados por árvores de comportamento, com mapas de custo para planejar e desviar.</p></div>
       </div>
       <p class="lead" style="color:var(--azulcl);margin-top:30px;font-size:18px">Perguntas?</p>
     </div>
@@ -816,107 +746,6 @@ norma = ${Math.hypot(qz,qw).toFixed(3)}`;
 $('yaw').oninput=e=>setYaw(+e.target.value);
 document.querySelectorAll('[data-yaw]').forEach(b=>b.onclick=()=>setYaw(+b.dataset.yaw));
 setYaw(0);
-
-/* ---------- Lifecycle ---------- */
-const SRV={amcl:['AMCL','nav2_amcl'],planner:['Planner server','nav2_planner'],controller:['Controller server','nav2_controller']};
-const ST={amcl:'Unconfigured',planner:'Unconfigured',controller:'Unconfigured'};
-const LCLS={Unconfigured:'unc',Inactive:'ina',Active:'act',Finalized:'fin'};
-const TRANS={
-  Unconfigured:[['configure','Inactive']],
-  Inactive:[['activate','Active'],['cleanup','Unconfigured']],
-  Active:[['deactivate','Inactive']],
-  Finalized:[]
-};
-function lcLog(m){ const l=$('lc-log'); l.textContent+=m+'\n'; l.scrollTop=l.scrollHeight; }
-function lcTo(k,verbo,to){
-  if(!TRANS[ST[k]].some(t=>t[0]===verbo)){
-    lcLog(`✗ ${SRV[k][0]}: ${verbo} não é válido em ${ST[k]}.`); return false;
-  }
-  lcLog(`✓ ${SRV[k][0]}: ${verbo} → ${to}`); ST[k]=to; renderLc(); return true;
-}
-function renderLc(){
-  $('lc-cards').innerHTML=Object.keys(SRV).map(k=>{
-    const s=ST[k];
-    const btns=TRANS[s].map(t=>`<button class="btn sec" data-k="${k}" data-v="${t[0]}" data-to="${t[1]}" style="margin:4px 4px 0 0">${t[0]}</button>`).join('')
-      + (s!=='Finalized'?`<button class="btn sec" data-k="${k}" data-v="shutdown" data-to="Finalized" style="margin:4px 0 0 0">shutdown</button>`:'');
-    return `<div class="card"><h3>${SRV[k][0]}</h3><p class="mono" style="font-size:12px;color:var(--cinza)">${SRV[k][1]}</p>
-      <div style="margin:10px 0"><span class="pill ${LCLS[s]}">${s}</span></div>
-      <div>${btns}</div></div>`;
-  }).join('');
-}
-$('lc-cards').addEventListener('click',e=>{
-  const b=e.target.closest('button[data-k]'); if(!b) return;
-  lcTo(b.dataset.k,b.dataset.v,b.dataset.to);
-});
-$('lc-config').onclick=()=>{ Object.keys(SRV).forEach(k=>{ if(ST[k]==='Unconfigured') lcTo(k,'configure','Inactive'); }); };
-$('lc-ativar').onclick=()=>{ Object.keys(SRV).forEach(k=>{ if(ST[k]==='Inactive') lcTo(k,'activate','Active'); }); };
-$('lc-reset').onclick=()=>{ Object.keys(SRV).forEach(k=>ST[k]='Unconfigured'); $('lc-log').textContent=''; renderLc(); };
-renderLc();
-
-/* ---------- Launch ---------- */
-let lnTimers=[];
-const LN_STEPS=[
-  ['lifecycle_manager','Lendo node_names: amcl, planner_server, controller_server'],
-  ['amcl','configure → Inactive'],['lifecycle_manager','amcl: configure enviado'],
-  ['planner_server','configure → Inactive'],['lifecycle_manager','planner_server: configure enviado'],
-  ['controller_server','configure → Inactive'],['lifecycle_manager','controller_server: configure enviado'],
-  ['lifecycle_manager','Todos configurados. Enviando activate'],
-  ['amcl','activate → Active'],['planner_server','activate → Active'],['controller_server','activate → Active'],
-  ['lifecycle_manager','Stack ativo. Navegação pronta.']
-];
-const LN_PILL={amcl:'ln-amcl',planner_server:'ln-planner',controller_server:'ln-controller'};
-const LN_NAME={amcl:'amcl',planner_server:'planner',controller_server:'controller'};
-function setLn(node,st){
-  const el=$(LN_PILL[node]); if(!el) return;
-  el.className='pill '+LCLS[st]; el.textContent=LN_NAME[node]+': '+st;
-}
-function lnReset(){
-  lnTimers.forEach(clearTimeout); lnTimers=[];
-  $('ln-log').textContent='';
-  setLn('amcl','Unconfigured'); setLn('planner_server','Unconfigured'); setLn('controller_server','Unconfigured');
-}
-$('ln-run').onclick=()=>{
-  lnReset(); let t=0;
-  LN_STEPS.forEach(([n,m])=>{
-    lnTimers.push(setTimeout(()=>{
-      const l=$('ln-log'); l.textContent+=`[${n}] ${m}\n`; l.scrollTop=l.scrollHeight;
-      if(m.includes('→ Inactive')) setLn(n,'Inactive');
-      if(m.includes('→ Active')) setLn(n,'Active');
-    },(t+=650)));
-  });
-};
-$('ln-reset').onclick=lnReset;
-
-/* ---------- Action ---------- */
-let actTimer=null, actD0=1, actD=1, actStart=null;
-function actStatus(t){ $('act-status').textContent=t; }
-function updActQuat(){
-  const d=+$('gyaw').value, th=d*Math.PI/180;
-  $('act-quat').textContent=`Orientação do goal: z = ${Math.sin(th/2).toFixed(3)}, w = ${Math.cos(th/2).toFixed(3)} (yaw ${d}°).`;
-}
-$('gyaw').oninput=updActQuat; updActQuat();
-$('act-send').onclick=()=>{
-  clearInterval(actTimer); clearTimeout(actStart);
-  const x=+$('gx').value, y=+$('gy').value;
-  actD0=Math.max(0.1,Math.hypot(x,y)); actD=actD0;
-  $('act-bar').style.width='0%';
-  actStatus('ACCEPTED · goal enviado para (x = '+x+', y = '+y+') m');
-  actStart=setTimeout(()=>{
-    actStatus('EXECUTING · distance_remaining: '+actD.toFixed(2)+' m');
-    actTimer=setInterval(()=>{
-      actD=Math.max(0,actD-0.25);
-      $('act-bar').style.width=((1-actD/actD0)*100).toFixed(0)+'%';
-      if(actD>0) actStatus('EXECUTING · distance_remaining: '+actD.toFixed(2)+' m');
-      else { clearInterval(actTimer); actTimer=null; actStatus('SUCCEEDED · error_code = 0 (NONE)'); }
-    },450);
-  },500);
-};
-$('act-cancel').onclick=()=>{
-  clearTimeout(actStart);
-  if(!actTimer){ actStatus('Nenhum goal ativo para cancelar.'); return; }
-  clearInterval(actTimer); actTimer=null;
-  actStatus('CANCELED · goal cancelado pelo cliente');
-};
 
 go(0);
 </script>
