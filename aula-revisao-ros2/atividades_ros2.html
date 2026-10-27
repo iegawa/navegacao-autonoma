@@ -1,0 +1,240 @@
+<meta name="claude:viewport-fit-sides" content="cover">
+<title>Atividades ROS 2</title>
+<style>
+:root{
+  --azul:#0B2545; --azul2:#13315C; --azulcl:#8DA9C4; --cinza:#5C6B7A;
+  --cinzacl:#E8ECF1; --branco:#FFFFFF; --laranja:#F26B1D; --texto:#1B2430;
+  --linha:#C9D2DC; --bg:#F4F6F9; --ok:#1f7a4d; --erro:#b42318;
+  --fonte:"Helvetica Neue",Arial,"Segoe UI",sans-serif; --mono:ui-monospace,Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--texto);font-family:var(--fonte);font-size:16px;line-height:1.55;padding-inline:max(16px,env(safe-area-inset-left,0px)) max(16px,env(safe-area-inset-right,0px));padding-block:0 60px}
+a{color:var(--azul2)}
+button{font:inherit;cursor:pointer}
+:focus-visible{outline:3px solid var(--laranja);outline-offset:2px}
+.wrap{max-width:960px;margin:0 auto;min-width:0}
+header.topo{background:var(--azul);color:var(--branco);padding:36px 0 28px;margin-bottom:24px}
+header .wrap{padding-inline:0}
+header .kicker{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--azulcl)}
+header h1{font-size:clamp(28px,4.5vw,44px);line-height:1.1;margin-top:6px;text-wrap:balance}
+header p{color:var(--azulcl);margin-top:10px;max-width:70ch}
+nav.ind{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:26px}
+nav.ind a{background:var(--branco);border:1px solid var(--linha);border-radius:999px;padding:7px 14px;text-decoration:none;font-size:14px;color:var(--azul)}
+nav.ind a:hover{border-color:var(--laranja)}
+section.atv{background:var(--branco);border:1px solid var(--linha);border-radius:12px;padding:24px;margin-bottom:28px;min-width:0}
+section.atv h2{font-size:clamp(22px,3.2vw,30px);color:var(--azul);line-height:1.2;text-wrap:balance}
+.meta{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.meta span{background:var(--cinzacl);border-radius:999px;padding:4px 12px;font-size:13px;color:var(--azul2);font-weight:600}
+h3{font-size:17px;color:var(--azul2);margin-top:22px;margin-bottom:8px}
+.objetivo{margin-top:14px;font-size:16px}
+.etapa{border:1px solid var(--linha);border-left:6px solid var(--azul2);border-radius:8px;padding:14px 16px;margin-top:12px;background:var(--bg);min-width:0}
+.etapa.lar{border-left-color:var(--laranja)}
+.etapa header2{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:10px}
+.etapa-top{}
+.etapa h4{font-size:16px;color:var(--azul);margin:0}
+.etapa ol,.etapa ul{margin:8px 0 0 20px}
+.etapa li{margin-bottom:4px;font-size:15px}
+.timer{display:flex;flex-wrap:wrap;align-items:center;gap:8px;background:var(--branco);border:1px solid var(--linha);border-radius:8px;padding:6px 8px}
+.timer .t{font-family:var(--mono);font-size:20px;font-weight:700;color:var(--azul);min-width:70px;text-align:center;font-variant-numeric:tabular-nums}
+.timer .min{font-size:12px;color:var(--cinza)}
+.timer.fim{border-color:var(--laranja);background:#FFF4EC}
+.timer.fim .t{color:var(--laranja)}
+.btn{background:var(--azul);color:var(--branco);border:none;border-radius:6px;padding:7px 12px;font-size:13px}
+.btn:hover{background:var(--laranja)}
+.btn.sec{background:var(--branco);color:var(--azul);border:1px solid var(--azul)}
+.btn.sec:hover{background:var(--cinzacl)}
+.grid2{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr));margin-top:6px;min-width:0}
+.box{background:var(--cinzacl);border-radius:8px;padding:14px 16px;min-width:0}
+.box ul{margin-left:18px}
+.box li{font-size:15px;margin-bottom:4px}
+.crit label{display:flex;gap:10px;align-items:flex-start;font-size:15px;padding:6px 0;color:var(--texto);cursor:pointer}
+.crit input{margin-top:5px;width:18px;height:18px;accent-color:var(--ok);flex:none}
+.aviso{background:#FDECEA;border:1px solid #F5B7B1;border-radius:8px;padding:12px 14px;font-size:14px;margin-top:16px}
+.pergunta{background:var(--azul);color:var(--branco);border-radius:8px;padding:14px 16px;margin-top:16px;font-size:15px}
+.pergunta b{color:var(--laranja)}
+pre{background:var(--azul);color:#DDE6F0;border-radius:8px;padding:12px 14px;overflow-x:auto;font-family:var(--mono);font-size:13px;margin-top:8px;max-width:100%}
+.nota{font-size:13px;color:var(--cinza);margin-top:8px}
+footer.rod{font-size:13px;color:var(--cinza);text-align:center;margin-top:30px}
+</style>
+
+<header class="topo">
+  <div class="wrap">
+    <div class="kicker">Navegação Autônoma · Aula de ROS 2</div>
+    <h1>Atividades práticas</h1>
+    <p>Três atividades para grupos, uma por plataforma. Cada etapa tem um cronômetro: clique em <b>Iniciar</b> ao começar e siga o tempo sugerido. Os critérios de avaliação estão marcados ao lado de cada atividade.</p>
+  </div>
+</header>
+
+<main class="wrap">
+  <nav class="ind" aria-label="Atividades">
+    <a href="#atividade-1">1 · TurtleBot físico</a>
+    <a href="#atividade-2">2 · Gazebo simulado</a>
+    <a href="#atividade-3">3 · Dobot Magician</a>
+  </nav>
+
+  <!-- ATIVIDADE 1 -->
+  <section class="atv" id="atividade-1">
+    <div class="kicker" style="font-size:12px;color:var(--cinza);text-transform:uppercase;letter-spacing:.06em">Atividade 1 · TurtleBot3 físico</div>
+    <h2>Odometria, erro e um nó de controle</h2>
+    <div class="meta"><span>50 min</span><span>Grupos de 2</span><span>Robô real</span></div>
+    <p class="objetivo"><b>Objetivo:</b> entender por que a odometria deriva e criar um controlador simples que usa o feedback dela.</p>
+    <p class="nota"><b>Pré-requisitos:</b> tópicos, mensagens <span class="mono">Twist</span> e <span class="mono">Odometry</span>, quaternions para extrair o yaw de <span class="mono">/odom</span>.</p>
+
+    <h3>Etapas</h3>
+    <div class="etapa">
+        <div class="etapa-top" style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><h4>1. Medir a deriva no teleop · 12 min</h4>
+        <div class="timer" data-s="720"><span class="t">12:00</span><button class="btn" data-a="start">Iniciar</button><button class="btn sec" data-a="reset">Zerar</button></div></div>
+        <ul><li>Andar 1 m em linha reta, 4 vezes, com o teleop.</li><li>Medir o deslocamento real com trena e anotar a posição final de <span class="mono">/odom</span> em cada repetição.</li></ul>
+    </div>
+    <div class="etapa lar">
+      <div class="etapa-top" style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><h4>2. Nó que anda 1 m pela odometria · 18 min</h4>
+      <div class="timer" data-s="1080"><span class="t">18:00</span><button class="btn" data-a="start">Iniciar</button><button class="btn sec" data-a="reset">Zerar</button></div></div>
+      <ul><li>Escrever um nó em rclpy que publica em <span class="mono">/cmd_vel</span> e para sozinho ao atingir 1 m, lendo <span class="mono">/odom</span>.</li><li>Testar com pelo menos duas velocidades.</li><li>O nó não pode usar tempo fixo para decidir a parada.</li></ul>
+    </div>
+    <div class="etapa">
+      <div class="etapa-top" style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><h4>3. Quadrado de 1 m · 12 min</h4>
+      <div class="timer" data-s="720"><span class="t">12:00</span><button class="btn" data-a="start">Iniciar</button><button class="btn sec" data-a="reset">Zerar</button></div></div>
+      <ul><li>Girar 90° controlando o yaw extraído do quaternion de <span class="mono">/odom</span>.</li><li>Repetir os quatro lados e registrar a trajetória (<span class="mono">x</span> × <span class="mono">y</span>).</li></ul>
+    </div>
+    <div class="etapa lar">
+      <div class="etapa-top" style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><h4>4. Comparar e analisar · 8 min</h4>
+      <div class="timer" data-s="480"><span class="t">08:00</span><button class="btn" data-a="start">Iniciar</button><button class="btn sec" data-a="reset">Zerar</button></div></div>
+      <ul><li>Comparar o quadrado medido com a trena e o registrado pela odometria.</li><li>Escrever o parágrafo de análise.</li></ul>
+    </div>
+
+    <div class="grid2">
+      <div class="box"><h3 style="margin-top:0">Entregável</h3><ul><li>Código do nó.</li><li>Gráfico da trajetória de <span class="mono">/odom</span>.</li><li>Tabela de deriva (4 medidas) e um parágrafo: qual parte do erro vem do giro e qual vem do deslocamento?</li></ul></div>
+      <div class="box crit"><h3 style="margin-top:0">Critérios</h3>
+        <label><input type="checkbox">O nó para sem depender de tempo fixo.</label>
+        <label><input type="checkbox">A deriva é medida com trena, não só estimada.</label>
+        <label><input type="checkbox">A análise identifica a fonte do erro.</label>
+      </div>
+    </div>
+    <div class="pergunta"><b>Pergunta de fechamento:</b> se o robô tivesse um LiDAR e um mapa, qual frame corrigiria esse erro? Por que <span class="mono">odom</span> não pode corrigi-lo sozinho?</div>
+    <div class="aviso"><b>Antes de começar:</b> confirmar que cada grupo tem um domínio ROS separado (<span class="mono">ROS_DOMAIN_ID</span> próprio) e que o robô tem espaço livre de 2 × 2 m.</div>
+  </section>
+
+  <!-- ATIVIDADE 2 -->
+  <section class="atv" id="atividade-2">
+    <div class="kicker" style="font-size:12px;color:var(--cinza);text-transform:uppercase;letter-spacing:.06em">Atividade 2 · Gazebo simulado</div>
+    <h2>Montar um robô e um mundo do zero</h2>
+    <div class="meta"><span>60 min</span><span>Grupos de 2</span><span>Simulação</span></div>
+    <p class="objetivo"><b>Objetivo:</b> criar um modelo com <span class="mono">visual</span>, <span class="mono">collision</span> e <span class="mono">inertial</span>, e conectá-lo ao ROS 2 pelo bridge.</p>
+    <p class="nota"><b>Pré-requisitos:</b> estrutura de links e tags, bridge, frames TF.</p>
+
+    <h3>Etapas</h3>
+    <div class="etapa">
+      <div class="etapa-top" style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><h4>1. Estrutura do modelo · 15 min</h4>
+      <div class="timer" data-s="900"><span class="t">15:00</span><button class="btn" data-a="start">Iniciar</button><button class="btn sec" data-a="reset">Zerar</button></div></div>
+      <ul><li>Criar a pasta <span class="mono">caixa_robo/</span> com <span class="mono">model.config</span>, <span class="mono">model.sdf</span> e <span class="mono">meshes/</span>.</li><li>Definir <span class="mono">visual</span> (mesh ou caixa) e <span class="mono">collision</span> com primitivas.</li></ul>
+    </div>
+    <div class="etapa lar">
+      <div class="etapa-top" style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><h4>2. Inércia e juntas · 10 min</h4>
+      <div class="timer" data-s="600"><span class="t">10:00</span><button class="btn" data-a="start">Iniciar</button><button class="btn sec" data-a="reset">Zerar</button></div></div>
+      <ul><li>Calcular a inércia da caixa: I = m(a² + b²)/12 para cada eixo. O cálculo vai no relatório.</li><li>Adicionar duas rodas com joints do tipo <span class="mono">revolute</span>.</li></ul>
+    </div>
+    <div class="etapa">
+      <div class="etapa-top" style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><h4>3. Plugins e sensor · 10 min</h4>
+      <div class="timer" data-s="600"><span class="t">10:00</span><button class="btn" data-a="start">Iniciar</button><button class="btn sec" data-a="reset">Zerar</button></div></div>
+      <ul><li>Incluir o plugin <span class="mono">DiffDrive</span> e um LiDAR com <span class="mono">gpu_lidar</span>.</li><li>Carregar o modelo em um mundo de teste com <span class="mono">GZ_SIM_RESOURCE_PATH</span> apontando para a pasta.</li></ul>
+    </div>
+    <div class="etapa lar">
+      <div class="etapa-top" style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><h4>4. Bridge e verificação · 10 min</h4>
+      <div class="timer" data-s="600"><span class="t">10:00</span><button class="btn" data-a="start">Iniciar</button><button class="btn sec" data-a="reset">Zerar</button></div></div>
+      <ul><li>Configurar o bridge para <span class="mono">/scan</span>, <span class="mono">/odom</span>, <span class="mono">/cmd_vel</span> e <span class="mono">/clock</span>, com o sentido certo em cada um.</li><li>Dirigir pelo teleop e conferir os frames no RViz.</li></ul>
+    </div>
+    <div class="etapa">
+      <div class="etapa-top" style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><h4>5. Experimento: massa ou atrito · 15 min</h4>
+      <div class="timer" data-s="900"><span class="t">15:00</span><button class="btn" data-a="start">Iniciar</button><button class="btn sec" data-a="reset">Zerar</button></div></div>
+      <ul><li>Mudar a massa ou o atrito das rodas em um valor fixo e medir a distância de frenagem após um comando de parada.</li><li>Repetir com o valor original e comparar.</li></ul>
+    </div>
+
+    <div class="grid2">
+      <div class="box"><h3 style="margin-top:0">Entregável</h3><ul><li>Pasta do modelo e arquivo do bridge.</li><li>Vídeo de 30 s dirigindo o robô.</li><li>Cálculo de inércia e tabela do experimento.</li></ul></div>
+      <div class="box crit"><h3 style="margin-top:0">Critérios</h3>
+        <label><input type="checkbox">O robô anda sem tombar nem tremer.</label>
+        <label><input type="checkbox">O cálculo de inércia está correto.</label>
+        <label><input type="checkbox">O bridge tem o sentido certo para cada tópico.</label>
+      </div>
+    </div>
+    <div class="pergunta"><b>Pergunta de fechamento:</b> quais parâmetros do SDF você mudaria para o modelo se comportar como o robô real? Como você saberia que ele se comporta?</div>
+  </section>
+
+  <!-- ATIVIDADE 3 -->
+  <section class="atv" id="atividade-3">
+    <div class="kicker" style="font-size:12px;color:var(--cinza);text-transform:uppercase;letter-spacing:.06em">Atividade 3 · Dobot Magician</div>
+    <h2>Repetibilidade e espaço de trabalho</h2>
+    <div class="meta"><span>45 min</span><span>Grupos de 2</span><span>Braço real</span></div>
+    <p class="objetivo"><b>Objetivo:</b> medir a precisão real do braço e comparar dois modos de movimento.</p>
+    <p class="nota"><b>Pré-requisitos:</b> serviços, coordenadas cartesianas e articulares, parada de emergência.</p>
+
+    <h3>Etapas</h3>
+    <div class="etapa">
+      <div class="etapa-top" style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><h4>1. Envelope e setup · 5 min</h4>
+      <div class="timer" data-s="300"><span class="t">05:00</span><button class="btn" data-a="start">Iniciar</button><button class="btn sec" data-a="reset">Zerar</button></div></div>
+      <ul><li>Conferir com o instrutor os limites do espaço de trabalho. Os grupos não escolhem coordenadas fora deles.</li><li>Subir o driver com <span class="mono">speed_ratio:=20.0</span> e limpar alarmes se necessário.</li></ul>
+    </div>
+    <div class="etapa lar">
+      <div class="etapa-top" style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><h4>2. Repetibilidade · 10 min</h4>
+      <div class="timer" data-s="600"><span class="t">10:00</span><button class="btn" data-a="start">Iniciar</button><button class="btn sec" data-a="reset">Zerar</button></div></div>
+      <ul><li>Mandar o braço ao mesmo ponto 5 vezes, com papel milimetrado sob a ponta.</li><li>Medir o desvio entre as marcas: média e desvio padrão.</li></ul>
+    </div>
+    <div class="etapa">
+      <div class="etapa-top" style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><h4>3. Comparar os modos · 8 min</h4>
+      <div class="timer" data-s="480"><span class="t">08:00</span><button class="btn" data-a="start">Iniciar</button><button class="btn sec" data-a="reset">Zerar</button></div></div>
+      <ul><li>Ir entre dois pontos com cada valor de <span class="mono">mode</span> no <span class="mono">SetPose</span>.</li><li>Registrar tempo e forma da trajetória observada.</li></ul>
+    </div>
+    <div class="etapa lar">
+      <div class="etapa-top" style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><h4>4. Triângulo de 3 cm · 12 min</h4>
+      <div class="timer" data-s="720"><span class="t">12:00</span><button class="btn" data-a="start">Iniciar</button><button class="btn sec" data-a="reset">Zerar</button></div></div>
+      <ul><li>Desenhar o triângulo com três pontos e voltar ao inicial.</li><li>Medir o erro de fechamento: distância entre o ponto de partida e o ponto final.</li></ul>
+    </div>
+    <div class="etapa">
+      <div class="etapa-top" style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><h4>5. Parada de emergência · 10 min</h4>
+      <div class="timer" data-s="600"><span class="t">10:00</span><button class="btn" data-a="start">Iniciar</button><button class="btn sec" data-a="reset">Zerar</button></div></div>
+      <ul><li>Com o braço em movimento lento, acionar <span class="mono">emergency_stop</span>. Medir o tempo até parar.</li><li>Tentar um novo comando sem reativar e registrar o que acontece.</li></ul>
+    </div>
+
+    <div class="grid2">
+      <div class="box"><h3 style="margin-top:0">Entregável</h3><ul><li>Tabela de repetibilidade (5 medidas, média e desvio padrão).</li><li>Comparação entre os modos.</li><li>Erro de fechamento do triângulo.</li><li>Relato da parada de emergência.</li></ul></div>
+      <div class="box crit"><h3 style="margin-top:0">Critérios</h3>
+        <label><input type="checkbox">A repetibilidade usa estatística básica.</label>
+        <label><input type="checkbox">O erro de fechamento é medido, não estimado.</label>
+        <label><input type="checkbox">Todos os movimentos ficam dentro do envelope combinado.</label>
+      </div>
+    </div>
+    <div class="pergunta"><b>Pergunta de fechamento:</b> o desvio medido é erro do braço ou do método de medição? Como você separaria os dois?</div>
+    <div class="aviso"><b>Segurança:</b> um aluno do grupo fica com a mão perto do botão de parada o tempo todo. Ninguém entra na área do braço durante um movimento. Se algo sair do esperado, acionar a parada primeiro e investigar depois.</div>
+  </section>
+
+  <footer class="rod">Inteli · Navegação Autônoma · Revisão de ROS 2</footer>
+</main>
+
+<script>
+function fmt(s){const m=Math.floor(s/60),r=s%60;return String(m).padStart(2,'0')+':'+String(r).padStart(2,'0');}
+document.querySelectorAll('.timer').forEach(t=>{
+  t.dataset.left=t.dataset.s; t.dataset.run='0';
+  t._id=null;
+  const label=t.querySelector('.t');
+  const startBtn=t.querySelector('[data-a=start]');
+  function tick(){
+    let left=+t.dataset.left-1;
+    t.dataset.left=left;
+    if(left<=0){
+      clearInterval(t._id); t._id=null; t.dataset.run='0';
+      t.dataset.left=0; label.textContent='00:00'; t.classList.add('fim');
+      startBtn.textContent='Iniciar';
+    } else { label.textContent=fmt(left); }
+  }
+  startBtn.addEventListener('click',()=>{
+    if(t._id){ clearInterval(t._id); t._id=null; startBtn.textContent='Continuar'; return; }
+    if(+t.dataset.left<=0){ t.dataset.left=t.dataset.s; t.classList.remove('fim'); }
+    t._id=setInterval(tick,1000); startBtn.textContent='Pausar';
+  });
+  t.querySelector('[data-a=reset]').addEventListener('click',()=>{
+    clearInterval(t._id); t._id=null;
+    t.dataset.left=t.dataset.s; label.textContent=fmt(+t.dataset.s);
+    t.classList.remove('fim'); startBtn.textContent='Iniciar';
+  });
+});
+</script>
