@@ -1,0 +1,790 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pose, Twist e Derivadas — Simulador 2D e 3D</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0f1220;--panel:#151a2e;--panel2:#1c2240;--line:#2b3157;--text:#e6e8f2;--muted:#9aa0bd;
+  --xw:#ff5a5f;--yw:#3ddc84;--zw:#4f8cff;
+  --vel:#ffa630;--omega:#c77dff;--body:#38bdf8;--qd:#fde047;--pos:#cbd5e1;--sp:#94a3b8;
+  --e1:#f472b6;--e2:#facc15;--e3:#2dd4bf;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font-family:Inter,system-ui,sans-serif;font-size:14px}
+body{display:flex;flex-direction:column}
+header{display:flex;align-items:center;gap:16px;padding:10px 16px;border-bottom:1px solid var(--line);background:#12162a;flex-wrap:wrap}
+.brand{font-weight:700;font-size:15px}
+.brand small{color:var(--muted);font-weight:500;margin-left:8px;font-size:12px}
+nav{display:flex;gap:6px;margin-left:auto}
+.tab{background:transparent;border:1px solid var(--line);color:var(--muted);padding:7px 14px;border-radius:8px;font:600 13px Inter,sans-serif;cursor:pointer}
+.tab.active{background:var(--panel2);color:var(--text);border-color:#4b55a0}
+main{flex:1;min-height:0;position:relative}
+.view{display:none;height:100%;grid-template-columns:1fr 410px}
+.view.active{display:grid}
+.stage{position:relative;min-height:0;overflow:hidden;background:var(--bg)}
+.stage canvas{width:100%;height:100%;display:block;touch-action:none}
+.panel{overflow-y:auto;border-left:1px solid var(--line);background:var(--panel);padding:12px;display:flex;flex-direction:column;gap:10px}
+.card{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.card h3{margin:0 0 8px;font-size:12px;letter-spacing:.02em;color:var(--muted);font-weight:700}
+.card p{margin:4px 0;color:#c4c8de;line-height:1.45;font-size:12.5px}
+.sl{display:grid;grid-template-columns:118px 1fr 52px;align-items:center;gap:8px;margin:5px 0;font-size:12.5px}
+.sl label{color:#cfd3ea}
+.sl output{font-family:'JetBrains Mono',monospace;font-size:12px;text-align:right;color:var(--text)}
+.sl input[type=range]{width:100%;accent-color:#7c8cff}
+.sl.dis{opacity:.4}
+.btns{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.btn{background:#262d55;border:1px solid #3a4380;color:var(--text);padding:6px 10px;border-radius:7px;font:600 12px Inter,sans-serif;cursor:pointer}
+.btn:hover{background:#303a6e}
+.btn.pri{background:#4652b8;border-color:#5b68d6}
+.chk{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12.5px}
+.chk label{display:flex;align-items:center;gap:6px;cursor:pointer}
+.sw{display:inline-block;width:12px;height:12px;border-radius:3px}
+.row{border-left:4px solid var(--c);padding:6px 8px;margin:6px 0;background:rgba(255,255,255,.025);border-radius:0 6px 6px 0}
+.rh{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.rh b{font-size:12.5px}
+.rh span{font-size:11px;color:var(--muted)}
+.nums{font-family:'JetBrains Mono',monospace;font-size:12.5px;margin-top:3px;display:flex;flex-wrap:wrap;gap:2px 14px}
+.nums i{font-style:normal;color:var(--text)}
+.nums em{font-style:normal;color:var(--muted)}
+.cmp{font-size:12px;padding:6px 8px;border-radius:6px;margin-top:6px}
+.cmp.eq{background:rgba(61,220,132,.12);color:#9ff0c2}
+.cmp.ne{background:rgba(255,166,48,.12);color:#ffd08a}
+.cmp.bad{background:rgba(255,90,95,.15);color:#ffb0b2}
+table.mat{border-collapse:collapse;font-family:'JetBrains Mono',monospace;font-size:12px;margin:4px 0}
+table.mat td{padding:1px 7px;text-align:right}
+.matwrap{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12.5px}
+.br{border-left:2px solid #6b739f;border-right:2px solid #6b739f;border-radius:4px;padding:0 2px}
+.legend{position:absolute;top:10px;left:10px;background:rgba(15,18,32,.82);border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:12px;line-height:1.7;pointer-events:none;max-width:310px}
+.legend div{display:flex;align-items:center;gap:7px}
+.toolbar{position:absolute;bottom:10px;left:10px;display:flex;gap:6px;align-items:center;flex-wrap:wrap;background:rgba(15,18,32,.82);border:1px solid var(--line);border-radius:8px;padding:6px}
+.toolbar select{background:#262d55;color:var(--text);border:1px solid #3a4380;border-radius:6px;padding:5px;font:600 12px Inter,sans-serif}
+.toolbar label{font-size:12px;display:flex;gap:5px;align-items:center;color:#cfd3ea}
+.tip{position:absolute;bottom:10px;right:10px;font-size:11.5px;color:var(--muted);background:rgba(15,18,32,.75);padding:5px 8px;border-radius:6px;pointer-events:none}
+details.gl summary{cursor:pointer;font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:var(--muted)}
+details.gl dl{margin:8px 0 0}
+details.gl dt{font-weight:700;font-size:12.5px;margin-top:8px}
+details.gl dd{margin:2px 0 0;color:#c4c8de;font-size:12.5px;line-height:1.45}
+.kbd{font-family:'JetBrains Mono',monospace;background:#0f1220;border:1px solid var(--line);border-radius:4px;padding:0 4px;font-size:11.5px}
+.gbar{height:8px;background:#0f1220;border-radius:4px;overflow:hidden;margin-top:4px}
+.gbar>div{height:100%;background:linear-gradient(90deg,#ff5a5f,#facc15 30%,#3ddc84 70%)}
+.err{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--muted);text-align:center;padding:20px}
+@media (max-width:900px){
+  html,body{height:auto}
+  main{overflow:visible}
+  .view.active{display:flex;flex-direction:column;height:auto}
+  .stage{height:60vh;flex:none}
+  .panel{border-left:none;border-top:1px solid var(--line);overflow:visible}
+  .legend{font-size:11px;max-width:220px}
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">Pose · Twist · Derivadas <small>referencial global {W} × local {B}</small></div>
+  <nav>
+    <button class="tab active" data-tab="t2d">2D · TurtleBot</button>
+    <button class="tab" data-tab="t3d">3D · Avião</button>
+  </nav>
+</header>
+<main>
+<!-- =========================== 2D =========================== -->
+<section id="t2d" class="view active">
+  <div class="stage" id="s2">
+    <canvas id="c2"></canvas>
+    <div class="legend">
+      <div><span class="sw" style="background:var(--xw)"></span><span class="sw" style="background:var(--yw)"></span>eixos (grossos: {W} global · finos: {B} local)</div>
+      <div><span class="sw" style="background:var(--pos)"></span>posição p (de {W} até o robô)</div>
+      <div><span class="sw" style="background:var(--body)"></span>twist no corpo: componentes em {B}</div>
+      <div><span class="sw" style="background:var(--qd)"></span>q̇: componentes ẋ, ẏ em {W}</div>
+      <div><span class="sw" style="background:var(--vel)"></span>velocidade física ṗ (a mesma seta!)</div>
+      <div><span class="sw" style="background:var(--omega)"></span>ω (giro)</div>
+    </div>
+    <div class="toolbar">
+      <button class="btn pri" id="b2play">❚❚ Pausar</button>
+      <button class="btn" id="b2reset">↺ Reiniciar</button>
+      <select id="b2spd"><option value="0.25">0,25×</option><option value="0.5">0,5×</option><option value="1" selected>1×</option><option value="2">2×</option></select>
+      <label><input type="checkbox" id="b2follow"> câmera segue</label>
+    </div>
+    <div class="tip">arraste o robô para movê-lo · arraste o fundo para mover a vista · roda do mouse = zoom</div>
+  </div>
+  <aside class="panel">
+    <div class="card">
+      <h3>Comando · twist no corpo ξ<sub>b</sub> (o que vai no cmd_vel)</h3>
+      <div class="sl"><label>v<sub>x</sub> (frente) m/s</label><input type="range" id="s2vx" min="-1" max="1" step="0.01" value="0.5"><output id="s2vxo"></output></div>
+      <div class="sl dis" id="s2vyrow"><label>v<sub>y</sub> (lado) m/s</label><input type="range" id="s2vy" min="-1" max="1" step="0.01" value="0" disabled><output id="s2vyo"></output></div>
+      <div class="sl"><label>ω (giro) rad/s</label><input type="range" id="s2w" min="-2" max="2" step="0.01" value="0.5"><output id="s2wo"></output></div>
+      <div class="chk" style="margin-top:4px"><label><input type="checkbox" id="s2holo"><span>base holonômica (libera v<sub>y</sub>). O TurtleBot é diferencial: v<sub>y</sub> = 0</span></label></div>
+      <div class="btns">
+        <button class="btn" data-p2="circ">Círculo</button>
+        <button class="btn" data-p2="reta">Reta</button>
+        <button class="btn" data-p2="giro">Gira no lugar</button>
+        <button class="btn" data-p2="lat">Holonômico: lateral</button>
+        <button class="btn" data-p2="zero">Zerar</button>
+      </div>
+    </div>
+    <div class="card">
+      <h3>Pose · editar orientação</h3>
+      <div class="sl"><label>θ (graus)</label><input type="range" id="s2th" min="-180" max="180" step="1" value="0"><output id="s2tho"></output></div>
+      <p><b>Experimento:</b> pause, deixe v<sub>x</sub> = 0,5 e ω = 0 e arraste θ. O twist ξ<sub>b</sub> não muda (o robô continua “indo para frente”), mas ẋ e ẏ mudam o tempo todo.</p>
+    </div>
+    <div class="card">
+      <h3>Valores ao vivo</h3>
+      <div id="p2vals"></div>
+    </div>
+    <div class="card">
+      <h3>Relação q̇ = J(θ) · ξ<sub>b</sub></h3>
+      <div id="p2mat"></div>
+    </div>
+    <div class="card">
+      <h3>Mostrar</h3>
+      <div class="chk">
+        <label><input type="checkbox" id="h2body" checked>twist em {B}</label>
+        <label><input type="checkbox" id="h2world" checked>ẋ, ẏ em {W}</label>
+        <label><input type="checkbox" id="h2vel" checked>ṗ</label>
+        <label><input type="checkbox" id="h2omega" checked>ω</label>
+        <label><input type="checkbox" id="h2pos" checked>posição p</label>
+        <label><input type="checkbox" id="h2icr" checked>centro de rotação (CIR)</label>
+        <label><input type="checkbox" id="h2trail" checked>rastro</label>
+      </div>
+    </div>
+    <details class="gl card" open>
+      <summary>O que é cada coisa</summary>
+      <dl>
+        <dt>Referencial global {W} (world / odom / map)</dt><dd>Fixo no chão. Eixos grossos na origem.</dd>
+        <dt>Referencial local {B} (base_link)</dt><dd>Preso no robô e se move com ele. x<sub>B</sub> aponta para a frente, y<sub>B</sub> para a esquerda (REP-103).</dd>
+        <dt>Posição p = (x, y)</dt><dd>Onde está a origem de {B}, medida em {W}.</dd>
+        <dt>Orientação θ</dt><dd>Quanto {B} está girado em relação a {W}.</dd>
+        <dt>Pose T = (R(θ), p)</dt><dd>Posição + orientação. (x, y, θ) são só os números que escolhemos para escrever T.</dd>
+        <dt>Twist ξ<sub>b</sub> = (v<sub>x</sub>, v<sub>y</sub>, ω)</dt><dd>A velocidade do corpo rígido escrita nos eixos de {B}. É o que os encoders medem e o que o cmd_vel manda.</dd>
+        <dt>Derivada das coordenadas q̇ = (ẋ, ẏ, θ̇)</dt><dd>Quanto os números da pose mudam por segundo. A parte linear (ẋ, ẏ) é a mesma seta ṗ, só que decomposta nos eixos de {W}.</dd>
+        <dt>Twist espacial ξ<sub>s</sub></dt><dd>A velocidade escrita em {W}, na convenção da álgebra de Lie: v<sub>s</sub> = ṗ − ω × p. Não é a velocidade do robô, e sim a de um ponto preso ao robô que passa pela origem de {W}.</dd>
+      </dl>
+    </details>
+  </aside>
+</section>
+
+<!-- =========================== 3D =========================== -->
+<section id="t3d" class="view">
+  <div class="stage" id="s3">
+    <div class="legend">
+      <div><span class="sw" style="background:var(--xw)"></span><span class="sw" style="background:var(--yw)"></span><span class="sw" style="background:var(--zw)"></span>x y z (na origem: {W} global · no avião: {B} local)</div>
+      <div><span class="sw" style="background:var(--pos)"></span>posição p</div>
+      <div><span class="sw" style="background:var(--vel)"></span>ṗ (velocidade linear)</div>
+      <div><span class="sw" style="background:var(--omega)"></span>ω (velocidade angular)</div>
+      <div><span class="sw" style="background:var(--e1)"></span><span class="sw" style="background:var(--e2)"></span><span class="sw" style="background:var(--e3)"></span>ψ̇ ẑ<sub>W</sub> + θ̇ y′ + φ̇ x<sub>B</sub> = ω</div>
+    </div>
+    <div class="toolbar">
+      <button class="btn pri" id="b3play">❚❚ Pausar</button>
+      <button class="btn" id="b3reset">↺ Reiniciar</button>
+      <select id="b3spd"><option value="0.25">0,25×</option><option value="0.5">0,5×</option><option value="1" selected>1×</option><option value="2">2×</option></select>
+      <label><input type="checkbox" id="b3follow" checked> câmera segue</label>
+    </div>
+    <div class="tip">arraste = orbitar · botão direito = mover · roda = zoom</div>
+  </div>
+  <aside class="panel">
+    <div class="card">
+      <h3>Comando · twist no corpo ξ<sub>b</sub> = (v<sub>b</sub>, ω<sub>b</sub>)</h3>
+      <div class="sl"><label>v<sub>x</sub> frente m/s</label><input type="range" id="s3vx" min="-2" max="12" step="0.1" value="6"><output id="s3vxo"></output></div>
+      <div class="sl"><label>v<sub>y</sub> esquerda m/s</label><input type="range" id="s3vy" min="-3" max="3" step="0.1" value="0"><output id="s3vyo"></output></div>
+      <div class="sl"><label>v<sub>z</sub> cima m/s</label><input type="range" id="s3vz" min="-3" max="3" step="0.1" value="0"><output id="s3vzo"></output></div>
+      <div class="sl"><label>ω<sub>x</sub> = p (roll) rad/s</label><input type="range" id="s3wx" min="-1.5" max="1.5" step="0.01" value="0"><output id="s3wxo"></output></div>
+      <div class="sl"><label>ω<sub>y</sub> = q (pitch) rad/s</label><input type="range" id="s3wy" min="-1.5" max="1.5" step="0.01" value="0"><output id="s3wyo"></output></div>
+      <div class="sl"><label>ω<sub>z</sub> = r (yaw) rad/s</label><input type="range" id="s3wz" min="-1.5" max="1.5" step="0.01" value="0.3"><output id="s3wzo"></output></div>
+      <div class="btns">
+        <button class="btn" data-p3="reto">Voo reto</button>
+        <button class="btn" data-p3="curva">Curva nivelada</button>
+        <button class="btn" data-p3="incl">Curva inclinada 30°</button>
+        <button class="btn" data-p3="roll">Tonneau (roll)</button>
+        <button class="btn" data-p3="loop">Loop (pitch)</button>
+        <button class="btn" data-p3="gl">Perto do gimbal lock (pausa)</button>
+        <button class="btn" data-p3="cross">Atravessar 90° de pitch</button>
+        <button class="btn" data-p3="zero">Zerar</button>
+      </div>
+    </div>
+    <div class="card">
+      <h3>Pose · editar orientação (Euler ZYX)</h3>
+      <div class="sl"><label>roll φ (°)</label><input type="range" id="s3r" min="-180" max="180" step="1" value="0"><output id="s3ro"></output></div>
+      <div class="sl"><label>pitch θ (°)</label><input type="range" id="s3p" min="-90" max="90" step="1" value="0"><output id="s3po"></output></div>
+      <div class="sl"><label>yaw ψ (°)</label><input type="range" id="s3y" min="-180" max="180" step="1" value="0"><output id="s3yo"></output></div>
+      <p>R = R<sub>z</sub>(ψ)·R<sub>y</sub>(θ)·R<sub>x</sub>(φ). Com z para cima (ROS), θ positivo abaixa o nariz. Na <b>curva inclinada</b>, ψ̇ = 0,35 enquanto ω<sub>b</sub> = (0; 0,18; 0,30): números diferentes para o mesmo giro.</p>
+    </div>
+    <div class="card">
+      <h3>Valores ao vivo</h3>
+      <div id="p3vals"></div>
+    </div>
+    <div class="card">
+      <h3>Relação q̇ = J(q) · ξ<sub>b</sub></h3>
+      <div id="p3mat"></div>
+    </div>
+    <div class="card">
+      <h3>A ordem das rotações importa</h3>
+      <p>Parte da orientação nula e gira 90° em torno de dois eixos do corpo, nas duas ordens. Os mesmos dois giros levam a orientações diferentes. Por isso ∫ω dt não dá ângulo nenhum.</p>
+      <div class="btns">
+        <button class="btn" id="seqXY">x 90° → depois y 90°</button>
+        <button class="btn" id="seqYX">y 90° → depois x 90°</button>
+      </div>
+      <p id="seqRes" style="font-family:'JetBrains Mono',monospace;font-size:12px"></p>
+    </div>
+    <div class="card">
+      <h3>Mostrar</h3>
+      <div class="chk">
+        <label><input type="checkbox" id="h3vel" checked>ṗ</label>
+        <label><input type="checkbox" id="h3omega" checked>ω</label>
+        <label><input type="checkbox" id="h3euler" checked>decomposição de Euler</label>
+        <label><input type="checkbox" id="h3pos" checked>posição p</label>
+        <label><input type="checkbox" id="h3trail" checked>rastro</label>
+      </div>
+    </div>
+    <details class="gl card">
+      <summary>O que é cada coisa (3D)</summary>
+      <dl>
+        <dt>Posição p = (x, y, z)</dt><dd>Origem de {B} medida em {W}. Sua derivada ṗ é a velocidade linear vista de {W}: ṗ = R·v<sub>b</sub>.</dd>
+        <dt>Orientação R (ou quaternion, ou Euler φ, θ, ψ)</dt><dd>R é a “verdade”. Quaternion e ângulos de Euler são formas de escrever R em números.</dd>
+        <dt>Twist ξ<sub>b</sub> = (v<sub>b</sub>, ω<sub>b</sub>)</dt><dd>6 números nos eixos de {B}. ω<sub>b</sub> = (p, q, r) é o que um giroscópio mede.</dd>
+        <dt>Taxas de Euler (φ̇, θ̇, ψ̇)</dt><dd>Cada uma gira em torno de um eixo diferente: ψ̇ em z<sub>W</sub>, θ̇ num eixo intermediário y′ e φ̇ em x<sub>B</sub>. Esses eixos não são ortogonais. A soma das três setas coloridas fecha na seta roxa ω.</dd>
+        <dt>Gimbal lock</dt><dd>Em θ = ±90°, z<sub>W</sub> e x<sub>B</sub> ficam paralelos, a matriz J deixa de ser invertível e as taxas de Euler explodem. O ω continua finito: o problema está nos números, não no movimento.</dd>
+        <dt>Twist espacial</dt><dd>ω<sub>s</sub> = R ω<sub>b</sub> e v<sub>s</sub> = ṗ − ω<sub>s</sub> × p.</dd>
+      </dl>
+    </details>
+  </aside>
+</section>
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+"use strict";
+const $ = id => document.getElementById(id);
+const CSS = getComputedStyle(document.documentElement);
+const COL = {};
+['xw','yw','zw','vel','omega','body','qd','pos','sp','e1','e2','e3'].forEach(k => COL[k] = CSS.getPropertyValue('--'+k).trim());
+const D2R = Math.PI/180, R2D = 180/Math.PI;
+const wrap = a => Math.atan2(Math.sin(a), Math.cos(a));
+function fmt(v, d=2){ if(!isFinite(v)) return ' ∞'; if(Math.abs(v) < 0.5*Math.pow(10,-d)) v = 0; return (v<0?'−':'+') + Math.abs(v).toFixed(d); }
+
+function bindSlider(id, fn, dec=2){
+  const el = $(id), out = $(id+'o');
+  const upd = () => { out.textContent = (+el.value).toFixed(dec); fn(+el.value); };
+  el.addEventListener('input', upd); upd();
+  el._drag = false;
+  el.addEventListener('pointerdown', () => el._drag = true);
+  window.addEventListener('pointerup', () => el._drag = false);
+  return el;
+}
+function setSlider(id, v, dec=2){ const el = $(id); el.value = v; el.dispatchEvent(new Event('input')); }
+function showSlider(id, v, dec=0){ const el = $(id); if(el._drag || document.activeElement === el && el._drag) return; el.value = v; $(id+'o').textContent = (+v).toFixed(dec); }
+
+function row(color, title, frame, pairs){
+  return `<div class="row" style="--c:${color}"><div class="rh"><b>${title}</b><span>${frame}</span></div><div class="nums">${
+    pairs.map(([k,v,d]) => `<span><em>${k}</em> <i>${typeof v === 'string' ? v : fmt(v, d ?? 2)}</i></span>`).join('')}</div></div>`;
+}
+function mat(rows, d=2){
+  return `<table class="mat br">${rows.map(r => `<tr>${r.map(v => `<td>${typeof v==='string'?v:fmt(v,d)}</td>`).join('')}</tr>`).join('')}</table>`;
+}
+
+/* ---------------- Tabs ---------------- */
+let activeTab = 't2d';
+document.querySelectorAll('.tab').forEach(b => b.addEventListener('click', () => {
+  document.querySelectorAll('.tab').forEach(x => x.classList.toggle('active', x === b));
+  document.querySelectorAll('.view').forEach(v => v.classList.toggle('active', v.id === b.dataset.tab));
+  activeTab = b.dataset.tab;
+  if(activeTab === 't3d' && !T3) init3();
+  try { localStorage.setItem('ptw-tab', activeTab); } catch(e){}
+}));
+
+/* =====================================================================
+   2D — TurtleBot
+   ===================================================================== */
+const S2 = { x:0, y:0, th:0, vx:0.5, vy:0, w:0.5, holo:false, playing:true, follow:false, trail:[], tAcc:0, speed:1,
+  show:{body:true, world:true, vel:true, omega:true, pos:true, icr:true, trail:true} };
+const V2 = { cx:0.6, cy:0.6, scale:110 };
+const c2 = $('c2'), g = c2.getContext('2d');
+let W2 = 0, H2 = 0, dpr = 1;
+function resize2(){
+  const r = c2.getBoundingClientRect(); if(!r.width) return;
+  dpr = window.devicePixelRatio || 1; W2 = r.width; H2 = r.height;
+  c2.width = Math.round(W2*dpr); c2.height = Math.round(H2*dpr);
+  if(!V2._init){ V2.scale = Math.max(60, Math.min(W2, H2)/5.2); V2._init = true; }
+}
+new ResizeObserver(resize2).observe(c2);
+const sx = x => (x - V2.cx)*V2.scale + W2/2;
+const sy = y => H2/2 - (y - V2.cy)*V2.scale;
+
+function arrowW(x0,y0,x1,y1,col,w=2.5,dash=null,head=11){
+  const X0=sx(x0),Y0=sy(y0),X1=sx(x1),Y1=sy(y1);
+  const L=Math.hypot(X1-X0,Y1-Y0); if(L<2) return;
+  const ux=(X1-X0)/L, uy=(Y1-Y0)/L, h=Math.min(head+w, L*0.55);
+  g.save(); g.strokeStyle=col; g.fillStyle=col; g.lineWidth=w; g.lineCap='round';
+  if(dash) g.setLineDash(dash);
+  g.beginPath(); g.moveTo(X0,Y0); g.lineTo(X1-ux*h*0.7, Y1-uy*h*0.7); g.stroke();
+  g.setLineDash([]);
+  g.beginPath(); g.moveTo(X1,Y1);
+  g.lineTo(X1-ux*h-uy*h*0.45, Y1-uy*h+ux*h*0.45);
+  g.lineTo(X1-ux*h+uy*h*0.45, Y1-uy*h-ux*h*0.45);
+  g.closePath(); g.fill(); g.restore();
+}
+function text2(x,y,main,sub,col,dx=6,dy=-6,size=14){
+  g.save(); g.font=`600 ${size}px Inter, sans-serif`; g.fillStyle=col;
+  g.shadowColor='rgba(0,0,0,.9)'; g.shadowBlur=4;
+  const X=sx(x)+dx, Y=sy(y)+dy; g.fillText(main,X,Y);
+  if(sub){ const w=g.measureText(main).width; g.font=`600 ${Math.round(size*0.72)}px Inter, sans-serif`; g.fillText(sub,X+w+1,Y+4); }
+  g.restore();
+}
+function tag2(x,y,txt,col,dx,dy){
+  g.save(); g.font='700 12px Inter, sans-serif';
+  const X=sx(x)+dx, Y=sy(y)+dy, w=g.measureText(txt).width+10;
+  g.fillStyle='rgba(15,18,32,.85)'; g.strokeStyle=col; g.lineWidth=1.2;
+  g.beginPath(); g.roundRect ? g.roundRect(X,Y-14,w,20,5) : g.rect(X,Y-14,w,20); g.fill(); g.stroke();
+  g.fillStyle=col; g.fillText(txt,X+5,Y); g.restore();
+}
+function drawGrid2(){
+  const x0=V2.cx-W2/2/V2.scale, x1=V2.cx+W2/2/V2.scale, y0=V2.cy-H2/2/V2.scale, y1=V2.cy+H2/2/V2.scale;
+  const step = V2.scale < 50 ? 1 : 0.5;
+  g.lineWidth=1;
+  for(let gx=Math.floor(x0/step)*step; gx<=x1; gx+=step){
+    const major=Math.abs(gx-Math.round(gx))<1e-6;
+    g.strokeStyle=major?'#252b4b':'#191e36'; g.beginPath(); g.moveTo(sx(gx),0); g.lineTo(sx(gx),H2); g.stroke();
+    if(major){ g.fillStyle='#4b5380'; g.font='11px JetBrains Mono, monospace'; g.fillText(Math.round(gx)+'m', sx(gx)+3, H2-8); }
+  }
+  for(let gy=Math.floor(y0/step)*step; gy<=y1; gy+=step){
+    const major=Math.abs(gy-Math.round(gy))<1e-6;
+    g.strokeStyle=major?'#252b4b':'#191e36'; g.beginPath(); g.moveTo(0,sy(gy)); g.lineTo(W2,sy(gy)); g.stroke();
+    if(major){ g.fillStyle='#4b5380'; g.font='11px JetBrains Mono, monospace'; g.fillText(Math.round(gy)+'m', 4, sy(gy)-3); }
+  }
+}
+function drawRobot(x,y,th){
+  const k=V2.scale, r=0.2*k;
+  g.save(); g.translate(sx(x),sy(y)); g.rotate(-th);
+  g.fillStyle='#0a0d18';
+  g.fillRect(-0.07*k, -r-0.035*k, 0.14*k, 0.05*k);
+  g.fillRect(-0.07*k,  r-0.015*k, 0.14*k, 0.05*k);
+  g.beginPath(); g.arc(0,0,r,0,2*Math.PI); g.fillStyle='rgba(32,44,92,.92)'; g.fill();
+  g.strokeStyle='#8ea2ff'; g.lineWidth=2; g.stroke();
+  g.beginPath(); g.arc(-r*0.15,0,r*0.3,0,2*Math.PI); g.fillStyle='#334155'; g.fill();
+  g.beginPath(); g.moveTo(r*0.9,0); g.lineTo(r*0.5,-r*0.24); g.lineTo(r*0.5,r*0.24); g.closePath(); g.fillStyle='#b4c0ff'; g.fill();
+  g.restore();
+}
+function drawOmega2(x,y,th,w){
+  if(Math.abs(w)<1e-3) return;
+  const R=0.42, a0=th+Math.PI*0.3, sweep=Math.max(-2.7,Math.min(2.7,w*1.3)), a1=a0+sweep;
+  g.save(); g.strokeStyle=COL.omega; g.lineWidth=2.8; g.lineCap='round';
+  g.beginPath(); g.arc(sx(x),sy(y),R*V2.scale,-a0,-a1,sweep>0); g.stroke(); g.restore();
+  const ex=x+R*Math.cos(a1), ey=y+R*Math.sin(a1), sg=Math.sign(sweep);
+  const tx=-Math.sin(a1)*sg, ty=Math.cos(a1)*sg;
+  arrowW(ex-tx*0.06, ey-ty*0.06, ex+tx*0.02, ey+ty*0.02, COL.omega, 2.8, null, 10);
+  const am=a0+sweep/2; text2(x+(R+0.1)*Math.cos(am), y+(R+0.1)*Math.sin(am), 'ω', null, COL.omega, -5, 5, 16);
+}
+function draw2(){
+  if(!W2) resize2(); if(!W2) return;
+  if(S2.follow){ V2.cx=S2.x; V2.cy=S2.y; }
+  g.setTransform(dpr,0,0,dpr,0,0); g.clearRect(0,0,W2,H2);
+  drawGrid2();
+  const {x,y,th,w} = S2, c=Math.cos(th), s=Math.sin(th), vx=S2.vx, vy=S2.holo?S2.vy:0;
+  const xd=c*vx-s*vy, yd=s*vx+c*vy, sh=S2.show, k=1.3;
+
+  if(sh.trail && S2.trail.length>1){
+    g.strokeStyle='rgba(148,163,184,.35)'; g.lineWidth=2; g.beginPath();
+    S2.trail.forEach((p,i)=> i?g.lineTo(sx(p[0]),sy(p[1])):g.moveTo(sx(p[0]),sy(p[1])));
+    g.lineTo(sx(x),sy(y)); g.stroke();
+  }
+  // world frame
+  arrowW(0,0,1,0,COL.xw,4); arrowW(0,0,0,1,COL.yw,4);
+  text2(1,0,'X','W',COL.xw,6,18); text2(0,1,'Y','W',COL.yw,8,4);
+  g.beginPath(); g.arc(sx(0),sy(0),4,0,2*Math.PI); g.fillStyle='#fff'; g.fill();
+  tag2(0,0,'{W} global',COL.pos,-82,28);
+  // position vector
+  if(sh.pos && Math.hypot(x,y)>0.05){
+    arrowW(0,0,x,y,COL.pos,1.8,[7,5]);
+    text2(x/2,y/2,'p',null,COL.pos,8,-8,15);
+  }
+  // ICR
+  if(sh.icr && !S2.holo && Math.abs(w)>1e-3 && Math.abs(vx)>1e-3){
+    const R=vx/w;
+    if(Math.abs(R)<12){
+      const ix=x-s*R, iy=y+c*R;
+      g.save(); g.strokeStyle='rgba(199,125,255,.28)'; g.setLineDash([3,6]); g.lineWidth=1.2;
+      g.beginPath(); g.arc(sx(ix),sy(iy),Math.abs(R)*V2.scale,0,2*Math.PI); g.stroke();
+      g.beginPath(); g.moveTo(sx(x),sy(y)); g.lineTo(sx(ix),sy(iy)); g.stroke(); g.restore();
+      g.beginPath(); g.arc(sx(ix),sy(iy),4,0,2*Math.PI); g.fillStyle=COL.omega; g.fill();
+      text2(ix,iy,'CIR',null,COL.omega,7,-6,12);
+    }
+  }
+  drawRobot(x,y,th);
+  // body frame
+  const La=0.62;
+  arrowW(x,y,x+La*c,y+La*s,COL.xw,2,null,9); arrowW(x,y,x-La*s,y+La*c,COL.yw,2,null,9);
+  text2(x+La*c,y+La*s,'x','B',COL.xw,4,-4,13); text2(x-La*s,y+La*c,'y','B',COL.yw,4,-4,13);
+  tag2(x-0.5*c,y-0.5*s,'{B} local',COL.body,-34,24);
+  // theta arc
+  g.save(); g.strokeStyle='rgba(203,213,225,.55)'; g.setLineDash([4,4]); g.lineWidth=1.2;
+  g.beginPath(); g.moveTo(sx(x),sy(y)); g.lineTo(sx(x+0.55),sy(y)); g.stroke();
+  g.setLineDash([]); g.strokeStyle='#e2e8f0'; g.lineWidth=1.6;
+  if(Math.abs(th)>0.02){ g.beginPath(); g.arc(sx(x),sy(y),0.3*V2.scale,0,-th,th>0); g.stroke(); }
+  g.restore();
+  if(Math.abs(th)>0.15) text2(x+0.36*Math.cos(th/2), y+0.36*Math.sin(th/2), 'θ', null, '#e2e8f0', -2, 5, 14);
+  // decompositions
+  if(sh.world && Math.hypot(xd,yd)>1e-3){
+    arrowW(x,y,x+xd*k,y,COL.qd,2,[5,4],8);
+    arrowW(x+xd*k,y,x+xd*k,y+yd*k,COL.qd,2,[5,4],8);
+    if(Math.abs(xd)>0.03) text2(x+xd*k/2,y,'ẋ',null,COL.qd,-4,yd>=0?16:-8,15);
+    if(Math.abs(yd)>0.03) text2(x+xd*k,y+yd*k/2,'ẏ',null,COL.qd,xd>=0?6:-16,4,15);
+  }
+  if(sh.body){
+    const ax=x+vx*k*c, ay=y+vx*k*s;
+    if(Math.abs(vx)>1e-3){ arrowW(x,y,ax,ay,COL.body,5,null,10); text2((x+ax)/2,(y+ay)/2,'v','x',COL.body,-6,-12,15); }
+    if(S2.holo && Math.abs(vy)>1e-3){ const bx=ax-vy*k*s, by=ay+vy*k*c; arrowW(ax,ay,bx,by,COL.body,5,null,10); text2((ax+bx)/2,(ay+by)/2,'v','y',COL.body,6,0,15); }
+  }
+  if(sh.vel && Math.hypot(xd,yd)>1e-3){ arrowW(x,y,x+xd*k,y+yd*k,COL.vel,2.4,null,12); text2(x+xd*k,y+yd*k,'ṗ',null,COL.vel,-20,-8,16); }
+  if(sh.omega) drawOmega2(x,y,th,w);
+}
+function step2(dt){
+  const vx=S2.vx, vy=S2.holo?S2.vy:0, w=S2.w, a=w*dt;
+  let dxb, dyb;
+  if(Math.abs(w)<1e-6){ dxb=vx*dt; dyb=vy*dt; }
+  else { dxb=(vx*Math.sin(a)-vy*(1-Math.cos(a)))/w; dyb=(vx*(1-Math.cos(a))+vy*Math.sin(a))/w; }
+  const c=Math.cos(S2.th), s=Math.sin(S2.th);
+  S2.x += c*dxb - s*dyb; S2.y += s*dxb + c*dyb; S2.th = wrap(S2.th + a);
+  S2.tAcc += dt;
+  if(S2.tAcc > 0.04){ S2.tAcc=0; S2.trail.push([S2.x,S2.y]); if(S2.trail.length>4000) S2.trail.shift(); }
+}
+function panel2(){
+  const {x,y,th,w} = S2, c=Math.cos(th), s=Math.sin(th), vx=S2.vx, vy=S2.holo?S2.vy:0;
+  const xd=c*vx-s*vy, yd=s*vx+c*vy, vsx=xd+w*y, vsy=yd-w*x;
+  const r=0.033, L=0.160, wR=(vx+w*L/2)/r, wL=(vx-w*L/2)/r;
+  const eq = Math.abs(vx-xd)<0.005 && Math.abs(vy-yd)<0.005;
+  let h = '';
+  h += row(COL.pos, 'Posição p', 'origem de {B} medida em {W}', [['x',x],['y',y]]);
+  h += row('#e2e8f0', 'Orientação θ', 'giro de {B} em relação a {W}', [['θ',th,3],['=',fmt(th*R2D,1)+'°']]);
+  h += row(COL.body, 'Twist no corpo ξ<sub>b</sub>', 'nos eixos de {B}', [['v<sub>x</sub>',vx],['v<sub>y</sub>',vy],['ω',w]]);
+  h += row(COL.qd, 'Derivada das coordenadas q̇', 'ẋ, ẏ nos eixos de {W}', [['ẋ',xd],['ẏ',yd],['θ̇',w]]);
+  h += `<div class="cmp ${eq?'eq':'ne'}">${eq
+      ? 'ξ<sub>b</sub> e q̇ coincidem agora: os eixos de {B} estão alinhados com {W} (θ ≈ 0) ou o robô está parado.'
+      : 'ξ<sub>b</sub> ≠ q̇: é a mesma seta ṗ, decomposta em eixos diferentes. Só θ̇ = ω (em 2D, a rotação comuta).'}</div>`;
+  h += row(COL.sp, 'Twist espacial ξ<sub>s</sub>', 'v<sub>s</sub> = ṗ − ω × p', [['v<sub>sx</sub>',vsx],['v<sub>sy</sub>',vsy],['ω',w]]);
+  if(!S2.holo) h += row('#64748b', 'Rodas (TurtleBot3 Burger)', 'r = 3,3 cm, L = 16 cm', [['ω<sub>R</sub>',wR,1],['ω<sub>L</sub>',wL,1],['','rad/s']]);
+  $('p2vals').innerHTML = h;
+  $('p2mat').innerHTML =
+    `<div class="matwrap">${mat([[xd],[yd],[w]])} = ${mat([[c,-s,0],[s,c,0],[0,0,1]])} ${mat([[vx],[vy],[w]])}</div>
+     <p>J(θ) é uma rotação de θ: ela pega a seta escrita em {B} e a reescreve em {W}. Só vira a identidade em θ = 0.</p>
+     <div class="matwrap">Pose T = ${mat([[c,-s,x],[s,c,y],[0,0,1]])}</div>`;
+  showSlider('s2th', Math.round(th*R2D), 0);
+}
+// controls 2D
+bindSlider('s2vx', v => S2.vx = v);
+bindSlider('s2vy', v => S2.vy = v);
+bindSlider('s2w',  v => S2.w = v);
+bindSlider('s2th', v => { if($('s2th')._drag) S2.th = v*D2R; }, 0);
+$('s2th').addEventListener('input', e => S2.th = (+e.target.value)*D2R);
+$('s2holo').addEventListener('change', e => {
+  S2.holo = e.target.checked; $('s2vy').disabled = !S2.holo; $('s2vyrow').classList.toggle('dis', !S2.holo);
+});
+const play2 = () => $('b2play').textContent = S2.playing ? '❚❚ Pausar' : '▶ Rodar';
+$('b2play').onclick = () => { S2.playing = !S2.playing; play2(); };
+$('b2reset').onclick = () => { S2.x=0; S2.y=0; S2.th=0; S2.trail=[]; V2.cx=0.6; V2.cy=0.6; };
+$('b2spd').onchange = e => S2.speed = +e.target.value;
+$('b2follow').onchange = e => { S2.follow = e.target.checked; };
+[['h2body','body'],['h2world','world'],['h2vel','vel'],['h2omega','omega'],['h2pos','pos'],['h2icr','icr'],['h2trail','trail']]
+  .forEach(([id,k]) => $(id).onchange = e => S2.show[k] = e.target.checked);
+document.querySelectorAll('[data-p2]').forEach(b => b.onclick = () => {
+  const p = b.dataset.p2;
+  const setH = on => { $('s2holo').checked = on; $('s2holo').dispatchEvent(new Event('change')); };
+  if(p==='circ'){ setH(false); setSlider('s2vx',0.5); setSlider('s2w',0.5); }
+  if(p==='reta'){ setH(false); setSlider('s2vx',0.5); setSlider('s2w',0); }
+  if(p==='giro'){ setH(false); setSlider('s2vx',0); setSlider('s2w',1); }
+  if(p==='lat'){ setH(true); setSlider('s2vx',0); setSlider('s2vy',0.4); setSlider('s2w',0); }
+  if(p==='zero'){ setSlider('s2vx',0); setSlider('s2vy',0); setSlider('s2w',0); }
+});
+// pointer 2D
+let drag2 = null;
+function w2(e){ const r=c2.getBoundingClientRect(); const mx=e.clientX-r.left, my=e.clientY-r.top;
+  return {mx, my, wx:V2.cx+(mx-W2/2)/V2.scale, wy:V2.cy-(my-H2/2)/V2.scale}; }
+c2.addEventListener('pointerdown', e => {
+  const p = w2(e);
+  if(Math.hypot(p.wx-S2.x, p.wy-S2.y) < 0.3) drag2 = {mode:'robot', ox:p.wx-S2.x, oy:p.wy-S2.y};
+  else drag2 = {mode:'pan', mx:p.mx, my:p.my, cx:V2.cx, cy:V2.cy};
+  c2.setPointerCapture(e.pointerId);
+});
+c2.addEventListener('pointermove', e => {
+  if(!drag2) return; const p = w2(e);
+  if(drag2.mode==='robot'){ S2.x=p.wx-drag2.ox; S2.y=p.wy-drag2.oy; }
+  else if(!S2.follow){ V2.cx=drag2.cx-(p.mx-drag2.mx)/V2.scale; V2.cy=drag2.cy+(p.my-drag2.my)/V2.scale; }
+});
+c2.addEventListener('pointerup', () => drag2 = null);
+c2.addEventListener('pointercancel', () => drag2 = null);
+c2.addEventListener('wheel', e => { e.preventDefault(); V2.scale = Math.max(25, Math.min(500, V2.scale*(e.deltaY<0?1.1:1/1.1))); }, {passive:false});
+
+/* =====================================================================
+   3D — Avião
+   ===================================================================== */
+let T3 = null;
+function init3(){
+  const host = $('s3');
+  if(typeof THREE === 'undefined' || !THREE.OrbitControls){
+    host.insertAdjacentHTML('beforeend','<div class="err">Não foi possível carregar a biblioteca 3D (three.js).<br>Verifique a conexão e recarregue a página.</div>');
+    T3 = {failed:true}; return;
+  }
+  const V = THREE.Vector3, Q = THREE.Quaternion;
+  const X = new V(1,0,0), Y = new V(0,1,0), Z = new V(0,0,1);
+  const renderer = new THREE.WebGLRenderer({antialias:true});
+  renderer.setPixelRatio(Math.min(2, window.devicePixelRatio||1));
+  host.insertBefore(renderer.domElement, host.firstChild);
+  const scene = new THREE.Scene(); scene.background = new THREE.Color(0x0f1220); scene.fog = new THREE.Fog(0x0f1220, 70, 190);
+  const camera = new THREE.PerspectiveCamera(50, 1, 0.1, 600);
+  camera.up.set(0,0,1); camera.position.set(-9,-12,10);
+  const controls = new THREE.OrbitControls(camera, renderer.domElement);
+  controls.target.set(0,0,5); controls.enableDamping = true; controls.dampingFactor = 0.12;
+  scene.add(new THREE.HemisphereLight(0xdde4ff, 0x1a1f38, 0.9));
+  const dl = new THREE.DirectionalLight(0xffffff, 0.7); dl.position.set(10,-20,30); scene.add(dl);
+  {
+    const gc = document.createElement('canvas'); gc.width = gc.height = 128; const gx = gc.getContext('2d');
+    gx.fillStyle = '#12162a'; gx.fillRect(0,0,128,128);
+    gx.strokeStyle = '#2c3463'; gx.lineWidth = 2; gx.strokeRect(0,0,128,128);
+    gx.strokeStyle = '#1f2547'; gx.lineWidth = 1; gx.beginPath(); gx.moveTo(64,0); gx.lineTo(64,128); gx.moveTo(0,64); gx.lineTo(128,64); gx.stroke();
+    const gt = new THREE.CanvasTexture(gc); gt.wrapS = gt.wrapT = THREE.RepeatWrapping; gt.repeat.set(60,60);
+    gt.anisotropy = renderer.capabilities.getMaxAnisotropy();
+    const ground = new THREE.Mesh(new THREE.PlaneGeometry(240,240), new THREE.MeshBasicMaterial({map:gt}));
+    ground.position.z = -0.02; scene.add(ground);
+  }
+
+  function resize3(){ const r = host.getBoundingClientRect(); if(!r.width) return; renderer.setSize(r.width, r.height, false);
+    renderer.domElement.style.width='100%'; renderer.domElement.style.height='100%';
+    camera.aspect = r.width/r.height; camera.updateProjectionMatrix(); }
+  new ResizeObserver(resize3).observe(host); resize3();
+
+  class FatArrow {
+    constructor(color, radius=0.06, parent=scene){
+      this.g = new THREE.Group(); this.r = radius; this.enabled = true;
+      const m = new THREE.MeshStandardMaterial({color, emissive:color, emissiveIntensity:0.35, roughness:0.5});
+      this.shaft = new THREE.Mesh(new THREE.CylinderGeometry(radius,radius,1,12), m);
+      this.head = new THREE.Mesh(new THREE.ConeGeometry(radius*2.6,1,16), m);
+      this.g.add(this.shaft, this.head); parent.add(this.g);
+    }
+    set(origin, vec){
+      const L = vec.length();
+      if(L < 1e-3 || !this.enabled){ this.g.visible = false; return; }
+      this.g.visible = true;
+      const hl = Math.min(L*0.4, this.r*7), sl = L - hl;
+      this.g.position.copy(origin);
+      this.g.quaternion.setFromUnitVectors(Y, vec.clone().normalize());
+      this.shaft.scale.set(1, Math.max(sl,1e-4), 1); this.shaft.position.set(0, sl/2, 0);
+      this.head.scale.set(1, hl, 1); this.head.position.set(0, sl+hl/2, 0);
+    }
+  }
+  function makeLabel(text, color, scale=1, parent=scene){
+    const cv = document.createElement('canvas'); cv.width=256; cv.height=96;
+    const x = cv.getContext('2d'); x.font='700 54px Inter, sans-serif'; x.fillStyle=color;
+    x.textAlign='center'; x.textBaseline='middle'; x.shadowColor='rgba(0,0,0,.95)'; x.shadowBlur=10; x.fillText(text,128,50);
+    const t = new THREE.CanvasTexture(cv); t.minFilter = THREE.LinearFilter;
+    const s = new THREE.Sprite(new THREE.SpriteMaterial({map:t, depthTest:false, transparent:true}));
+    s.scale.set(2.6*scale, 0.98*scale, 1); s.renderOrder = 999; parent.add(s); return s;
+  }
+  const hex = c => new THREE.Color(c).getHex();
+
+  // world frame
+  const O = new V();
+  const wa = [new FatArrow(hex(COL.xw),0.08), new FatArrow(hex(COL.yw),0.08), new FatArrow(hex(COL.zw),0.08)];
+  wa[0].set(O, X.clone().multiplyScalar(6)); wa[1].set(O, Y.clone().multiplyScalar(6)); wa[2].set(O, Z.clone().multiplyScalar(6));
+  makeLabel('X_W', COL.xw).position.set(6.8,0,0); makeLabel('Y_W', COL.yw).position.set(0,6.8,0); makeLabel('Z_W', COL.zw).position.set(0,0,6.8);
+  makeLabel('{W} global', COL.pos, 1.1).position.set(-1.5,-1.5,-0.6);
+  const ob = new THREE.Mesh(new THREE.SphereGeometry(0.18,16,12), new THREE.MeshBasicMaterial({color:0xffffff})); scene.add(ob);
+
+  // airplane
+  const plane = new THREE.Group(); scene.add(plane);
+  const mB = new THREE.MeshStandardMaterial({color:0xdfe6f5, metalness:0.2, roughness:0.5});
+  const mA = new THREE.MeshStandardMaterial({color:0x5b68d6, metalness:0.2, roughness:0.5});
+  const fus = new THREE.Mesh(new THREE.CylinderGeometry(0.3,0.2,3.8,20), mB); fus.rotation.z = -Math.PI/2; plane.add(fus);
+  const nose = new THREE.Mesh(new THREE.ConeGeometry(0.3,0.9,20), mA); nose.rotation.z = -Math.PI/2; nose.position.x = 2.35; plane.add(nose);
+  const wing = new THREE.Mesh(new THREE.BoxGeometry(1.1,5,0.09), mB); wing.position.set(0.25,0,0); plane.add(wing);
+  const tipL = new THREE.Mesh(new THREE.BoxGeometry(0.4,0.12,0.12), new THREE.MeshBasicMaterial({color:0xff4d4d})); tipL.position.set(0.25,2.5,0); plane.add(tipL);
+  const tipR = new THREE.Mesh(new THREE.BoxGeometry(0.4,0.12,0.12), new THREE.MeshBasicMaterial({color:0x3ddc84})); tipR.position.set(0.25,-2.5,0); plane.add(tipR);
+  const hst = new THREE.Mesh(new THREE.BoxGeometry(0.6,1.9,0.07), mB); hst.position.set(-1.7,0,0.05); plane.add(hst);
+  const fin = new THREE.Mesh(new THREE.BoxGeometry(0.75,0.07,1.0), mA); fin.position.set(-1.7,0,0.55); plane.add(fin);
+  const ba = [new FatArrow(hex(COL.xw),0.05,plane), new FatArrow(hex(COL.yw),0.05,plane), new FatArrow(hex(COL.zw),0.05,plane)];
+  ba[0].set(O, new V(3.6,0,0)); ba[1].set(O, new V(0,3.4,0)); ba[2].set(O, new V(0,0,2.6));
+  makeLabel('x_B', COL.xw, 0.8, plane).position.set(4.1,0,0);
+  makeLabel('y_B', COL.yw, 0.8, plane).position.set(0,3.9,0);
+  makeLabel('z_B', COL.zw, 0.8, plane).position.set(0,0,3.0);
+  makeLabel('{B} local', COL.body, 0.9, plane).position.set(-2.4,0,1.6);
+
+  // dynamic arrows
+  const aPos = new FatArrow(hex(COL.pos), 0.035);
+  const aVel = new FatArrow(hex(COL.vel), 0.08);
+  const aOm  = new FatArrow(hex(COL.omega), 0.08);
+  const aE   = [new FatArrow(hex(COL.e1),0.055), new FatArrow(hex(COL.e2),0.055), new FatArrow(hex(COL.e3),0.055)];
+  const lPos = makeLabel('p', COL.pos, 0.9), lVel = makeLabel('ṗ', COL.vel, 1), lOm = makeLabel('ω', COL.omega, 1);
+  const lE = [makeLabel('ψ̇', COL.e1, 0.85), makeLabel('θ̇', COL.e2, 0.85), makeLabel('φ̇', COL.e3, 0.85)];
+
+  // trail
+  const TMAX = 2500;
+  const tLine = new THREE.InstancedMesh(new THREE.SphereGeometry(0.07,6,4), new THREE.MeshBasicMaterial({color:0x94a3b8, transparent:true, opacity:0.55}), TMAX);
+  tLine.count = 0; tLine.frustumCulled = false; scene.add(tLine);
+  let tN = 0, tHead = 0, tAcc = 0; const tM = new THREE.Matrix4();
+  const tGeo = { setDrawRange(){ tN = 0; tHead = 0; tLine.count = 0; } };
+  function trailPush(p){
+    tM.makeTranslation(p.x, p.y, p.z); tLine.setMatrixAt(tHead, tM); tLine.instanceMatrix.needsUpdate = true;
+    tHead = (tHead+1) % TMAX; tN = Math.min(tN+1, TMAX); tLine.count = tN;
+  }
+  const S = { p:new V(0,0,5), q:new Q(), vb:new V(6,0,0), wb:new V(0,0,0.3), playing:true, follow:true, speed:1,
+    show:{vel:true, omega:true, euler:true, pos:true, trail:true}, curV:new V(), curW:new V(), anim:null, prevP:new V(0,0,5) };
+
+  const qAxis = (ax, a) => new Q().setFromAxisAngle(ax, a);
+  const quatZYX = (phi, th, psi) => qAxis(Z,psi).multiply(qAxis(Y,th)).multiply(qAxis(X,phi));
+  function eulerZYX(q){
+    const m = new THREE.Matrix4().makeRotationFromQuaternion(q).elements;
+    return { phi:Math.atan2(m[6], m[10]), theta:Math.asin(Math.max(-1,Math.min(1,-m[2]))), psi:Math.atan2(m[1], m[0]), m };
+  }
+  function eulerRates(e, w){
+    const sf=Math.sin(e.phi), cf=Math.cos(e.phi), ct=Math.cos(e.theta), tt=Math.tan(e.theta);
+    const a = w.y*sf + w.z*cf;
+    return { phid:w.x + a*tt, thetad:w.y*cf - w.z*sf, psid:a/ct, singular:Math.abs(ct) < 0.035, ct };
+  }
+
+  function step(dt){
+    if(S.anim){
+      const st = S.anim.steps[S.anim.i], rate = (Math.PI/2)/1.3;
+      const d = Math.min(rate*dt, st.angle - S.anim.done);
+      S.q.multiply(qAxis(st.axis, d)).normalize(); S.anim.done += d;
+      S.curV.set(0,0,0); S.curW.copy(st.axis).multiplyScalar(rate);
+      if(S.anim.done >= st.angle - 1e-9){
+        S.anim.i++; S.anim.done = 0;
+        if(S.anim.i >= S.anim.steps.length){
+          const nose = X.clone().applyQuaternion(S.q), e = eulerZYX(S.q);
+          $('seqRes').innerHTML = `${S.anim.name}: nariz x<sub>B</sub> aponta para (${fmt(nose.x,1)}, ${fmt(nose.y,1)}, ${fmt(nose.z,1)}) em {W}<br>Euler: φ ${fmt(e.phi*R2D,0)}°, θ ${fmt(e.theta*R2D,0)}°, ψ ${fmt(e.psi*R2D,0)}°` + (Math.abs(e.theta)>1.55 ? '<br>(θ = 90°: gimbal lock, φ e ψ ficam ambíguos)' : '');
+          S.anim = null;
+        }
+      }
+      return;
+    }
+    S.curV.copy(S.vb); S.curW.copy(S.wb);
+    if(!S.playing || poseDragging()) return;
+    S.p.addScaledVector(S.vb.clone().applyQuaternion(S.q), dt);
+    const wd = S.wb.clone().multiplyScalar(dt), ang = wd.length();
+    if(ang > 1e-9) S.q.multiply(qAxis(wd.normalize(), ang)).normalize();
+    tAcc += dt; if(tAcc > 0.08){ tAcc = 0; trailPush(S.p); }
+  }
+  const poseDragging = () => $('s3r')._drag || $('s3p')._drag || $('s3y')._drag;
+
+  function render(){
+    plane.position.copy(S.p); plane.quaternion.copy(S.q);
+    const pd = S.curV.clone().applyQuaternion(S.q);
+    const ws = S.curW.clone().applyQuaternion(S.q);
+    const kv = 0.5, kw = 5;
+    aPos.enabled = S.show.pos; aPos.set(O, S.p.clone());
+    lPos.visible = S.show.pos; lPos.position.copy(S.p).multiplyScalar(0.5).add(new V(0,0,0.5));
+    aVel.enabled = S.show.vel; const vv = pd.clone().multiplyScalar(kv); aVel.set(S.p, vv);
+    lVel.visible = S.show.vel && vv.length() > 0.05; lVel.position.copy(S.p).add(vv).add(new V(0,0,0.6));
+    aOm.enabled = S.show.omega; const wv = ws.clone().multiplyScalar(kw); aOm.set(S.p, wv);
+    lOm.visible = S.show.omega && wv.length() > 0.05; lOm.position.copy(S.p).add(wv).add(new V(0,0,0.6));
+    const e = eulerZYX(S.q), r = eulerRates(e, S.curW);
+    const showE = S.show.euler && !r.singular;
+    const yp = new V(-Math.sin(e.psi), Math.cos(e.psi), 0);
+    const xb = new V(e.m[0], e.m[1], e.m[2]);
+    const cap = v => v.length() > 30 ? v.setLength(30) : v;
+    const v1 = cap(Z.clone().multiplyScalar(r.psid*kw)), v2 = cap(yp.clone().multiplyScalar(r.thetad*kw)), v3 = cap(xb.clone().multiplyScalar(r.phid*kw));
+    const o1 = S.p.clone(), o2 = o1.clone().add(v1), o3 = o2.clone().add(v2);
+    [[v1,o1],[v2,o2],[v3,o3]].forEach(([v,o],i) => {
+      aE[i].enabled = showE; aE[i].set(o, v);
+      lE[i].visible = showE && v.length() > 0.15; lE[i].position.copy(o).addScaledVector(v, 0.55).add(new V(0,0,0.45));
+    });
+    tLine.visible = S.show.trail;
+    if(S.follow){ const d = S.p.clone().sub(S.prevP); camera.position.add(d); controls.target.add(d); }
+    S.prevP.copy(S.p);
+    controls.update(); renderer.render(scene, camera);
+  }
+
+  function panel(){
+    const e = eulerZYX(S.q), r = eulerRates(e, S.curW), m = e.m;
+    const pd = S.curV.clone().applyQuaternion(S.q), ws = S.curW.clone().applyQuaternion(S.q);
+    const vs = pd.clone().sub(ws.clone().cross(S.p));
+    const w = S.curW, v = S.curV;
+    const eqW = !r.singular && Math.abs(w.x-r.phid)<0.005 && Math.abs(w.y-r.thetad)<0.005 && Math.abs(w.z-r.psid)<0.005;
+    const eqV = pd.distanceTo(v) < 0.01;
+    let h = '';
+    h += row(COL.pos, 'Posição p', 'em {W}', [['x',S.p.x,1],['y',S.p.y,1],['z',S.p.z,1]]);
+    h += row('#e2e8f0', 'Orientação (Euler ZYX)', '{B} em relação a {W}', [['φ',fmt(e.phi*R2D,1)+'°'],['θ',fmt(e.theta*R2D,1)+'°'],['ψ',fmt(e.psi*R2D,1)+'°']]);
+    h += row('#e2e8f0', 'Orientação (quaternion)', 'mesma R, outros números', [['w',S.q.w,3],['x',S.q.x,3],['y',S.q.y,3],['z',S.q.z,3]]);
+    h += row(COL.body, 'Twist no corpo: v<sub>b</sub>', 'eixos de {B}', [['v<sub>x</sub>',v.x],['v<sub>y</sub>',v.y],['v<sub>z</sub>',v.z]]);
+    h += row(COL.body, 'Twist no corpo: ω<sub>b</sub> = (p, q, r)', 'eixos de {B} · giroscópio', [['p',w.x],['q',w.y],['r',w.z]]);
+    h += row(COL.vel, 'ṗ = R·v<sub>b</sub>', 'parte linear de q̇ · eixos de {W}', [['ẋ',pd.x],['ẏ',pd.y],['ż',pd.z]]);
+    h += `<div class="cmp ${eqV?'eq':'ne'}">${eqV?'v<sub>b</sub> = ṗ agora (eixos alinhados ou parado).':'v<sub>b</sub> ≠ ṗ: mesma seta laranja, eixos diferentes.'}</div>`;
+    h += row(COL.omega, 'ω<sub>s</sub> = R·ω<sub>b</sub>', 'mesma seta roxa, eixos de {W}', [['ω<sub>x</sub>',ws.x],['ω<sub>y</sub>',ws.y],['ω<sub>z</sub>',ws.z]]);
+    h += row(COL.e2, 'Taxas de Euler (φ̇, θ̇, ψ̇)', 'parte angular de q̇ · eixos misturados', [['φ̇',r.singular?'∞':r.phid],['θ̇',r.thetad],['ψ̇',r.singular?'∞':r.psid]]);
+    h += `<div class="cmp ${r.singular?'bad':eqW?'eq':'ne'}">${r.singular
+        ? 'GIMBAL LOCK: cos θ ≈ 0. As taxas de Euler não estão definidas, mas ω continua finito.'
+        : eqW ? '(φ̇, θ̇, ψ̇) = ω<sub>b</sub> agora (caso especial: atitude ≈ nivelada).'
+              : '(φ̇, θ̇, ψ̇) ≠ ω<sub>b</sub> ≠ ω<sub>s</sub>: três descrições do mesmo giro.'}
+      <div class="gbar" title="|cos θ|"><div style="width:${(Math.abs(r.ct)*100).toFixed(0)}%"></div></div>
+      <div style="font-size:11px;margin-top:2px;color:var(--muted)">|cos θ| = ${Math.abs(r.ct).toFixed(3)} (perto de 0 = gimbal lock)</div></div>`;
+    h += row(COL.sp, 'Twist espacial: v<sub>s</sub> = ṗ − ω<sub>s</sub> × p', 'eixos de {W}', [['',vs.x],['',vs.y],['',vs.z]]);
+    $('p3vals').innerHTML = h;
+    const sf=Math.sin(e.phi), cf=Math.cos(e.phi), ct=Math.cos(e.theta), tt=Math.tan(e.theta);
+    const Einv = r.singular ? [['1','∞','∞'],[0,cf,-sf],['0','∞','∞']] : [[1,sf*tt,cf*tt],[0,cf,-sf],[0,sf/ct,cf/ct]];
+    $('p3mat').innerHTML =
+      `<div class="matwrap"><span>ṗ =</span>${mat([[m[0],m[4],m[8]],[m[1],m[5],m[9]],[m[2],m[6],m[10]]])}<span>v<sub>b</sub></span></div>
+       <p>O bloco de translação é a própria R: reescreve v<sub>b</sub> nos eixos de {W}.</p>
+       <div class="matwrap"><span>(φ̇,θ̇,ψ̇) =</span>${mat(Einv)}<span>ω<sub>b</sub></span></div>
+       <p>O bloco angular depende de φ e θ, não é ortogonal e explode em θ = ±90°. Por isso as taxas de Euler não são componentes de ω.</p>`;
+    showSlider('s3r', Math.round(e.phi*R2D)); showSlider('s3p', Math.round(e.theta*R2D)); showSlider('s3y', Math.round(e.psi*R2D));
+  }
+
+  // controls 3D
+  bindSlider('s3vx', v => S.vb.x = v, 1); bindSlider('s3vy', v => S.vb.y = v, 1); bindSlider('s3vz', v => S.vb.z = v, 1);
+  bindSlider('s3wx', v => S.wb.x = v);  bindSlider('s3wy', v => S.wb.y = v);  bindSlider('s3wz', v => S.wb.z = v);
+  const setPoseFromSliders = () => { S.anim = null; S.q.copy(quatZYX(+$('s3r').value*D2R, +$('s3p').value*D2R, +$('s3y').value*D2R)); };
+  ['s3r','s3p','s3y'].forEach(id => bindSlider(id, () => { if($(id)._drag) setPoseFromSliders(); }, 0));
+  ['s3r','s3p','s3y'].forEach(id => $(id).addEventListener('input', setPoseFromSliders));
+  const play3 = () => $('b3play').textContent = S.playing ? '❚❚ Pausar' : '▶ Rodar';
+  $('b3play').onclick = () => { S.playing = !S.playing; S.anim = null; play3(); };
+  $('b3reset').onclick = () => {
+    S.anim = null; S.p.set(0,0,5); S.q.identity(); tGeo.setDrawRange();
+    S.prevP.copy(S.p); camera.position.set(-9,-12,10); controls.target.set(0,0,5);
+  };
+  $('b3spd').onchange = e => S.speed = +e.target.value;
+  $('b3follow').onchange = e => { S.follow = e.target.checked; if(S.follow){ const d = S.p.clone().sub(controls.target); camera.position.add(d); controls.target.copy(S.p); } };
+  [['h3vel','vel'],['h3omega','omega'],['h3euler','euler'],['h3pos','pos'],['h3trail','trail']].forEach(([id,k]) => $(id).onchange = e => S.show[k] = e.target.checked);
+  const setTw = (vx,vy,vz,wx,wy,wz) => { setSlider('s3vx',vx); setSlider('s3vy',vy); setSlider('s3vz',vz); setSlider('s3wx',wx); setSlider('s3wy',wy); setSlider('s3wz',wz); };
+  const setPose = (r,p,y) => { S.anim = null; S.q.copy(quatZYX(r*D2R,p*D2R,y*D2R)); };
+  document.querySelectorAll('[data-p3]').forEach(b => b.onclick = () => {
+    const k = b.dataset.p3; const yaw = eulerZYX(S.q).psi*R2D;
+    if(k==='reto'){ setPose(0,0,yaw); setTw(6,0,0,0,0,0); }
+    if(k==='curva'){ setPose(0,0,yaw); setTw(6,0,0,0,0,0.35); }
+    if(k==='incl'){ setPose(30,0,yaw); setTw(6,0,0,0,0.35*Math.sin(30*D2R),0.35*Math.cos(30*D2R)); }
+    if(k==='roll'){ setPose(0,0,yaw); setTw(6,0,0,0.8,0,0); }
+    if(k==='loop'){ setPose(0,0,yaw); setTw(6,0,0,0,-0.45,0); }
+    if(k==='gl'){ setPose(0,86,yaw); setTw(0,0,0,0,0,0.3); }
+    if(k==='cross'){ setPose(0,55,yaw); setTw(0,0,0,0,0.25,0); }
+    if(k==='zero'){ setTw(0,0,0,0,0,0); }
+    S.playing = (k !== 'gl'); play3();
+  });
+  const runSeq = (name, steps) => { S.q.identity(); S.anim = {name, steps, i:0, done:0}; $('seqRes').textContent = 'girando…'; };
+  $('seqXY').onclick = () => runSeq('x→y', [{axis:X, angle:Math.PI/2},{axis:Y, angle:Math.PI/2}]);
+  $('seqYX').onclick = () => runSeq('y→x', [{axis:Y, angle:Math.PI/2},{axis:X, angle:Math.PI/2}]);
+
+  T3 = { step, render, panel, S };
+}
+
+/* ---------------- Main loop ---------------- */
+let last = performance.now(), panelT = 1;
+function frame(now){
+  const dt = Math.min(0.05, (now-last)/1000); last = now;
+  try {
+    if(activeTab === 't2d'){
+      if(S2.playing && !(drag2 && drag2.mode==='robot')) step2(dt*S2.speed);
+      draw2();
+    } else if(T3 && !T3.failed){
+      T3.step(dt*T3.S.speed); T3.render();
+    }
+    panelT += dt;
+    if(panelT > 0.08){ panelT = 0; if(activeTab==='t2d') panel2(); else if(T3 && !T3.failed) T3.panel(); }
+  } catch(err){ console.error(err); }
+  requestAnimationFrame(frame);
+}
+try { const t = localStorage.getItem('ptw-tab'); if(t === 't3d') document.querySelector('[data-tab="t3d"]').click(); } catch(e){}
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
