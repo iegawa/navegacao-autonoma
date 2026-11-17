@@ -11,3 +11,7 @@ Abra `index.html` no navegador ou acesse a versão publicada pelo GitHub Pages.
 ## Aula 3: Pose, transformações e odometria
 
 `aula-03/` traz os slides interativos da Aula 3 (pose 2D/3D, referenciais, transformações homogêneas, twist, restrição não holonômica, sensores e odometria), com checkpoints e notas do professor (tecla N).
+
+## Aula 4: Mapas, OctoMap e A*
+
+`aula-04/` traz os slides interativos da Aula 4 (representação do ambiente, mapas, OctoMap e planejamento de caminho com A*).
